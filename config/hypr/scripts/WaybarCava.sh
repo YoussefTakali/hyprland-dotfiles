@@ -53,5 +53,10 @@ data_format = ascii
 ascii_max_range = 7
 EOF
 
-# Stream cava output and translate digits 0..7 to bar glyphs
-exec cava -p "$config_file" | sed -u "$dict"
+# Stream cava output and translate digits 0..7 to bar glyphs.
+# cava exits when the audio device changes (e.g. Bluetooth headphones reconnect), so restart it
+# instead of letting the Waybar module die.
+while true; do
+  cava -p "$config_file" | sed -u "$dict" || true
+  sleep 1
+done

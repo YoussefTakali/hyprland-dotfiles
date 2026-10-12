@@ -136,6 +136,7 @@
 // This is a custom cava visualizer
 "custom/cava_mviz": {
 	"exec": "$HOME/.config/hypr/scripts/WaybarCava.sh",
+	"restart-interval": 2,
 	"format": "{}"
 },
 
