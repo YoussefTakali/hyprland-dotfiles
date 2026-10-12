@@ -172,6 +172,7 @@ apply_image_wallpaper() {
   local image_path="$1"
 
   kill_wallpaper_for_image
+  rm -f "$HOME/.config/hypr/wallpaper_effects/.live_wallpaper"   # an image replaces the video for good
 
   if ! pgrep -x "swww-daemon" >/dev/null; then
     echo "Starting swww-daemon..."
@@ -199,8 +200,8 @@ apply_video_wallpaper() {
   fi
   kill_wallpaper_for_video
 
-  # Apply video wallpaper using mpvpaper
-  mpvpaper '*' -o "load-scripts=no no-audio --loop" "$video_path" &
+  # Video wallpaper: mpvpaper + colors / lock-screen image from a frame (UserScripts/LiveWallpaper.sh)
+  "$HOME/.config/hypr/UserScripts/LiveWallpaper.sh" "$video_path"
 }
 
 # Main function

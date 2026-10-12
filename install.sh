@@ -34,8 +34,9 @@ fi
 # 2. Extra packages used by these configs
 say "Installing extra packages"
 sudo dnf copr enable -y errornointernet/quickshell
+sudo dnf copr enable -y sdegler/hyprland        # mpvpaper (video wallpapers)
 sudo dnf install -y \
-    quickshell qt6-qtmultimedia qt6-qt5compat qt6-qtsvg \
+    quickshell mpvpaper ffmpeg qt6-qtmultimedia qt6-qt5compat qt6-qtsvg \
     cava wf-recorder tesseract tesseract-langpack-eng hyprpicker cliphist grim slurp swappy wl-clipboard \
     ImageMagick fastfetch lsd fzf kitty playerctl blueman nautilus thunar \
     python3-gobject jq tuned-ppd libnotify

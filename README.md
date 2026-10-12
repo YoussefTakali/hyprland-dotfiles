@@ -29,6 +29,7 @@ Not included: the full wallpaper collection (only the current wallpaper), and ap
 | Utilities | **Super+X** grid: screenshot, screen recorder, color picker, clipboard, calculator, emoji, Wi-Fi, Bluetooth, power profile, night light, OCR text grab, keybinds |
 | Cheat sheet | **Super+H**: live keybinds grouped by category (rofi) |
 | Menus | rofi theme `KooL_utilities` (blurred, rounded) for every popup; Wi-Fi/Bluetooth menus with VPN, hidden networks, pairing |
+| Wallpaper | Super+W picks images **or videos** (mp4/mkv/mov/webm in ~/Pictures/wallpapers); videos play with mpvpaper, pause under fullscreen apps, theme colors come from a frame, and the video comes back after reboot |
 | Windows | solid accent border, soft accent glow, rounded corners |
 | Terminal | kitty with Catppuccin Mocha + JetBrains Mono, wallpaper startup card (fastfetch), readable `agnosterzak-mocha` prompt |
 | GTK apps | translucent Catppuccin + mauve style for GTK3/GTK4 apps (Nautilus, settings windows), mauve folder icons |
