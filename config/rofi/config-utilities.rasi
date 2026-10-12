@@ -1,0 +1,75 @@
+/* Utilities hub (Super+X) — grid of tools. Colors follow wallust. */
+@import "~/.config/rofi/wallust/colors-rofi.rasi"
+
+configuration {
+    font: "JetBrainsMono Nerd Font SemiBold 12";
+    show-icons: false;
+    hover-select: true;
+    me-select-entry: "";
+    me-accept-entry: "MousePrimary";
+}
+
+* {
+    bg: @background;
+    tile:    rgba(255, 255, 255, 0.05);
+    accent:  @selected-normal-background;
+    fg:      @foreground;
+    dim:     rgba(208, 214, 232, 0.55);
+    background-color: transparent;
+    font: "JetBrainsMono Nerd Font SemiBold 12";
+    text-color: @fg;
+}
+
+window {
+    width: 820px;
+    border: 2px solid;
+    border-color: @accent;
+    border-radius: 18px;
+    background-color: @bg;
+}
+
+mainbox { padding: 22px; spacing: 16px; children: [ "inputbar", "listview", "message" ]; }
+
+inputbar {
+    padding: 12px 16px;
+    border-radius: 12px;
+    background-color: @tile;
+    children: [ "textbox-prompt", "entry" ];
+}
+textbox-prompt { expand: false; str: "󰍉  "; text-color: @accent; }
+entry { placeholder: "Search utilities…"; placeholder-color: @dim; }
+
+listview {
+    columns: 4;
+    lines: 3;
+    fixed-columns: true;
+    flow: horizontal;
+    spacing: 12px;
+    cycle: true;
+    scrollbar: false;
+}
+
+element {
+    orientation: vertical;
+    padding: 10px 6px;
+    border-radius: 14px;
+    border: 1px solid;
+    border-color: transparent;
+    background-color: @tile;
+}
+element selected.normal, element selected.active {
+    background-color: rgba(255, 255, 255, 0.12);
+    border-color: @accent;
+    border-color: @accent;
+}
+element-text {
+    horizontal-align: 0.5;
+    vertical-align: 0.5;
+    font: "JetBrainsMono Nerd Font SemiBold 11";
+    text-color: inherit;
+    background-color: transparent;
+    font: "JetBrainsMono Nerd Font SemiBold 12";
+}
+
+message { border-radius: 10px; padding: 6px 4px 0 4px; }
+textbox { text-color: @dim; font: "JetBrainsMono Nerd Font 9"; }

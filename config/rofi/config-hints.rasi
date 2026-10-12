@@ -1,0 +1,26 @@
+/* Cheat sheet (Super+H) — four columns of grouped keybinds. Colors follow wallust. */
+@import "~/.config/rofi/wallust/colors-rofi.rasi"
+
+configuration { font: "JetBrainsMono Nerd Font SemiBold 10"; show-icons: false; hover-select: true; me-select-entry: ""; me-accept-entry: "MousePrimary"; }
+
+* {
+    bg: @background;
+    tile: rgba(255, 255, 255, 0.05);
+    accent: @selected-normal-background;
+    fg: @foreground;
+    dim: rgba(208, 214, 232, 0.55);
+    background-color: transparent;
+    font: "JetBrainsMono Nerd Font SemiBold 10";
+    text-color: @fg;
+}
+window { width: 1860px; border: 2px solid; border-color: @accent; border-radius: 18px; background-color: @bg; }
+mainbox { padding: 22px 26px; spacing: 14px; children: [ "inputbar", "listview", "message" ]; }
+inputbar { padding: 10px 14px; border-radius: 12px; background-color: @tile; spacing: 10px; children: [ "prompt", "entry" ]; }
+prompt { text-color: @accent; }
+entry { placeholder: "Search shortcuts…"; placeholder-color: @dim; }
+listview { columns: 4; lines: 24; flow: vertical; fixed-height: true; fixed-columns: true; spacing: 1px; scrollbar: false; cycle: false; }
+element { padding: 3px 8px; margin: 0 10px 0 0; border-radius: 8px; }
+element selected.normal { background-color: @selected-normal-background; text-color: @selected-normal-foreground; }
+element-text { text-color: inherit; vertical-align: 0.5; }
+message { padding: 4px 2px 0 2px; }
+textbox { text-color: @dim; font: "JetBrainsMono Nerd Font 9"; }

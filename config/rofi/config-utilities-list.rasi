@@ -1,0 +1,24 @@
+/* Small list menus used by the utilities (record, Wi-Fi, Bluetooth, power). */
+@import "~/.config/rofi/wallust/colors-rofi.rasi"
+
+configuration { font: "JetBrainsMono Nerd Font SemiBold 12"; show-icons: false; hover-select: true; me-select-entry: ""; me-accept-entry: "MousePrimary"; }
+
+* {
+    bg: @background;
+    tile: rgba(255, 255, 255, 0.05);
+    accent: @selected-normal-background;
+    fg: @foreground;
+    dim: rgba(208, 214, 232, 0.55);
+    background-color: transparent;
+    font: "JetBrainsMono Nerd Font SemiBold 12";
+    text-color: @fg;
+}
+window { width: 520px; border: 2px solid; border-color: @accent; border-radius: 16px; background-color: @bg; }
+mainbox { padding: 18px; spacing: 12px; children: [ "inputbar", "listview" ]; }
+inputbar { padding: 10px 14px; border-radius: 10px; background-color: @tile; children: [ "prompt", "entry" ]; spacing: 10px; }
+prompt { text-color: @accent; }
+entry { placeholder: "Search…"; placeholder-color: @dim; }
+listview { lines: 9; dynamic: true; spacing: 4px; scrollbar: false; cycle: true; }
+element { padding: 9px 12px; border-radius: 10px; }
+element selected.normal, element selected.active { background-color: @selected-normal-background; text-color: @selected-normal-foreground; }
+element-text { text-color: inherit; vertical-align: 0.5; }

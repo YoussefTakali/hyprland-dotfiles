@@ -1,0 +1,15 @@
+/* GTK4 / libadwaita apps (Nautilus, pavucontrol, …): shared palette + a few modern touches (2026-10-12) */
+@import url("file:///home/rhast/.config/gtk-theme/mauve-palette.css");
+
+* { font-family: "JetBrainsMono Nerd Font"; }
+
+/* rounder, softer controls */
+button, entry, spinbutton, dropdown > button, searchbar entry, .linked > button { border-radius: 10px; }
+row, listview > row, .boxed-list > row, .navigation-sidebar > row { border-radius: 10px; }
+.navigation-sidebar > row:selected { background-color: alpha(var(--accent-bg-color), 0.28); color: #ffffff; }
+
+/* Nautilus: selection, path bar and grid tiles in the accent color */
+.nautilus-window gridview > child:selected,
+.nautilus-window columnview > listview > row:selected { background-color: alpha(var(--accent-bg-color), 0.30); }
+.nautilus-window gridview > child { border-radius: 12px; }
+.nautilus-window .path-bar-box, .nautilus-window .nautilus-path-bar { border-radius: 12px; }

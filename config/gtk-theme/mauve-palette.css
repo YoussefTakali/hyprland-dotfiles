@@ -1,0 +1,67 @@
+/* Shared palette for GTK4/libadwaita apps and GTK3 apps on adw-gtk3 (2026-10-12).
+   Catppuccin Mocha + mauve accent, translucent backgrounds so Hyprland's blur shows through.
+   Imported by ~/.config/gtk-4.0/gtk.css and ~/.config/gtk-3.0/gtk.css. */
+
+/* libadwaita ≥ 1.6 (CSS variables) */
+:root {
+  --accent-color: #cba6f7;
+  --accent-bg-color: #b58aed;
+  --accent-fg-color: #11111b;
+  --window-bg-color: rgba(17, 17, 27, 0.80);
+  --window-fg-color: #cdd6f4;
+  --view-bg-color: rgba(24, 24, 37, 0.62);
+  --view-fg-color: #cdd6f4;
+  --headerbar-bg-color: rgba(17, 17, 27, 0.0);
+  --headerbar-fg-color: #cdd6f4;
+  --headerbar-backdrop-color: rgba(17, 17, 27, 0.0);
+  --headerbar-shade-color: rgba(0, 0, 0, 0);
+  --headerbar-border-color: rgba(255, 255, 255, 0.0);
+  --sidebar-bg-color: rgba(30, 30, 46, 0.55);
+  --sidebar-fg-color: #cdd6f4;
+  --sidebar-backdrop-color: rgba(30, 30, 46, 0.45);
+  --sidebar-shade-color: rgba(0, 0, 0, 0.12);
+  --secondary-sidebar-bg-color: rgba(30, 30, 46, 0.40);
+  --card-bg-color: rgba(255, 255, 255, 0.05);
+  --card-fg-color: #cdd6f4;
+  --card-shade-color: rgba(0, 0, 0, 0.2);
+  --popover-bg-color: rgba(24, 24, 37, 0.97);
+  --popover-fg-color: #cdd6f4;
+  --dialog-bg-color: rgba(24, 24, 37, 0.97);
+  --dialog-fg-color: #cdd6f4;
+  --thumbnail-bg-color: rgba(255, 255, 255, 0.06);
+  --destructive-color: #f38ba8;
+  --destructive-bg-color: #e06c8c;
+  --success-color: #a6e3a1;
+  --warning-color: #f9e2af;
+  --error-color: #f38ba8;
+  --window-radius: 14px;
+}
+
+/* older libadwaita and adw-gtk3 (named colors) */
+@define-color accent_color #cba6f7;
+@define-color accent_bg_color #b58aed;
+@define-color accent_fg_color #11111b;
+@define-color window_bg_color rgba(17, 17, 27, 0.80);
+@define-color window_fg_color #cdd6f4;
+@define-color view_bg_color rgba(24, 24, 37, 0.62);
+@define-color view_fg_color #cdd6f4;
+@define-color headerbar_bg_color rgba(17, 17, 27, 0.0);
+@define-color headerbar_fg_color #cdd6f4;
+@define-color headerbar_backdrop_color rgba(17, 17, 27, 0.0);
+@define-color headerbar_shade_color rgba(0, 0, 0, 0);
+@define-color headerbar_border_color rgba(255, 255, 255, 0.0);
+@define-color sidebar_bg_color rgba(30, 30, 46, 0.55);
+@define-color sidebar_fg_color #cdd6f4;
+@define-color sidebar_backdrop_color rgba(30, 30, 46, 0.45);
+@define-color secondary_sidebar_bg_color rgba(30, 30, 46, 0.40);
+@define-color card_bg_color rgba(255, 255, 255, 0.05);
+@define-color card_fg_color #cdd6f4;
+@define-color popover_bg_color rgba(24, 24, 37, 0.97);
+@define-color popover_fg_color #cdd6f4;
+@define-color dialog_bg_color rgba(24, 24, 37, 0.97);
+@define-color dialog_fg_color #cdd6f4;
+@define-color destructive_color #f38ba8;
+@define-color destructive_bg_color #e06c8c;
+@define-color success_color #a6e3a1;
+@define-color warning_color #f9e2af;
+@define-color error_color #f38ba8;

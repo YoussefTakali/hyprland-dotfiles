@@ -1,0 +1,126 @@
+//* ---- 💫 https://github.com/JaKooLit 💫 ---- *//
+/* Waybar Modules Extras */
+
+/* This is where you can add Extra Modules you wish. copy.sh will try to restore*/
+/* this file along with the unique configs and styles. */
+/* IMPORTANT, be mindful with , or ". else waybar will not start */
+
+{
+"custom/joi": {
+  "format": "{}",
+  "exec": "cat $HOME/.local/state/joi/waybar.json 2>/dev/null || echo '{\"text\": \"\"}'",
+  "return-type": "json",
+  "interval": "once",
+  "signal": 9,
+  "tooltip": true,
+  "on-click": "$HOME/.local/bin/joi-ctl key-down",
+  "on-click-right": "$HOME/.local/bin/joi-ctl toggle-window",
+  "on-click-middle": "$HOME/.local/bin/joi-ctl dnd"
+},
+
+// ── Utilities additions (2026-10-12) ─────────────────────────────
+
+// NVIDIA GPU usage; shows "off" while the GPU sleeps (the script never wakes it)
+"custom/gpu": {
+  "exec": "$HOME/.config/hypr/UserScripts/GpuUsage.sh",
+  "return-type": "json",
+  "interval": 3,
+  "format": "{}",
+  "min-length": 5,
+  "tooltip": true,
+  "on-click-right": "$HOME/.config/hypr/scripts/WaybarScripts.sh --nvtop"
+},
+
+// Same drawer as group/mobo_drawer, with the GPU right after the CPU
+"group/hw_drawer": {
+  "orientation": "inherit",
+  "drawer": {
+    "transition-duration": 500,
+    "children-class": "cpu",
+    "transition-left-to-right": true
+  },
+  "modules": [
+    "temperature",
+    "cpu",
+    "custom/gpu",
+    "power-profiles-daemon",
+    "memory",
+    "disk"
+  ]
+},
+
+// Lights up while the mic or the screen is being used by an app
+"privacy": {
+  "icon-spacing": 6,
+  "icon-size": 14,
+  "transition-duration": 250,
+  "ignore-monitor": true,
+  "ignore": [
+    { "type": "audio-in", "name": "cava" }
+  ],
+  "modules": [
+    { "type": "screenshare", "tooltip": true, "tooltip-icon-size": 22 },
+    { "type": "audio-in", "tooltip": true, "tooltip-icon-size": 22 }
+  ]
+},
+
+// Only visible while recording; click to stop
+"custom/recorder": {
+  "exec": "$HOME/.config/hypr/UserScripts/ScreenRecord.sh --status",
+  "return-type": "json",
+  "interval": 1,
+  "signal": 8,
+  "format": "{}",
+  "tooltip": true,
+  "on-click": "$HOME/.config/hypr/UserScripts/ScreenRecord.sh --stop"
+},
+
+"custom/clipboard": {
+  "format": "󰅌",
+  "tooltip": true,
+  "tooltip-format": "Left click: clipboard history\nRight click: utilities (Super+X)",
+  "on-click": "$HOME/.config/hypr/scripts/ClipManager.sh",
+  "on-click-right": "$HOME/.config/hypr/UserScripts/UtilityHub.sh"
+},
+
+// Wi-Fi + upload/download in one module (replaces network#speed in the bar); colors come from the CSS theme
+"network#wifi": {
+  "interval": 1,
+  "format-wifi": "   {bandwidthUpBytes}   {bandwidthDownBytes}",
+  "format-ethernet": "󰈀   {bandwidthUpBytes}   {bandwidthDownBytes}",
+  "format-linked": "󰈀  no IP",
+  "format-disconnected": "󰖪  offline",
+  "format-disabled": "󰖪  Wi-Fi off",
+  "min-length": 28,
+  "max-length": 28,
+  "tooltip-format-wifi": "{essid}  ·  {signalStrength}%\n{ipaddr}  ·  {frequency} GHz\n\nLeft click: Wi-Fi menu\nRight click: nmtui",
+  "tooltip-format-ethernet": "{ifname}  ·  {ipaddr}",
+  "tooltip-format-disconnected": "Disconnected\nLeft click: Wi-Fi menu",
+  "on-click": "$HOME/.config/hypr/UserScripts/NetMenu.sh --wifi",
+  "on-click-right": "$HOME/.config/hypr/scripts/WaybarScripts.sh --nmtui"
+},
+
+// Bluetooth: device name (+ battery) when connected; colors come from the CSS theme
+"bluetooth#bt": {
+  "format": "󰂯",
+  "format-off": "󰂲",
+  "format-disabled": "󰂲",
+  "format-connected": "󰂱 {device_alias}",
+  "format-connected-battery": "󰂱 {device_alias} {device_battery_percentage}%",
+  "tooltip-format": "Bluetooth on · no device\nLeft click: devices · Right click: Blueman",
+  "tooltip-format-off": "Bluetooth off\nLeft click: turn on",
+  "tooltip-format-connected": "{device_enumerate}\n\nLeft click: devices · Right click: Blueman",
+  "tooltip-format-enumerate-connected": "{device_alias}",
+  "tooltip-format-enumerate-connected-battery": "{device_alias}  ·  {device_battery_percentage}%",
+  "on-click": "$HOME/.config/hypr/UserScripts/NetMenu.sh --bluetooth",
+  "on-click-right": "blueman-manager"
+},
+
+"group/net_bt": {
+  "orientation": "inherit",
+  "modules": [
+    "network#wifi",
+    "bluetooth#bt"
+  ]
+},
+}

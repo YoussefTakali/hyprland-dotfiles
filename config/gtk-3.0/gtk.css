@@ -1,0 +1,141 @@
+/* Desktop restyle for every GTK3 app (2026-10-12): Catppuccin Mocha + mauve accent, rounded,
+   translucent so Hyprland's blur shows. Sits on top of Flat-Remix-GTK-Blue-Dark.
+   Previous Thunar-only version: ~/.config/hypr/backup-utilities-2026-10-12/gtk3-thunar-only.css */
+
+@define-color c_bg      rgba(17, 17, 27, 0.80);
+@define-color c_solid   #181825;
+@define-color c_side    rgba(30, 30, 46, 0.55);
+@define-color c_tile    rgba(255, 255, 255, 0.05);
+@define-color c_tile2   rgba(255, 255, 255, 0.09);
+@define-color c_hover   rgba(203, 166, 247, 0.14);
+@define-color c_sel     rgba(203, 166, 247, 0.30);
+@define-color c_accent  #cba6f7;
+@define-color c_text    #cdd6f4;
+@define-color c_dim     #a6adc8;
+@define-color c_crust   #11111b;
+@define-color c_line    rgba(255, 255, 255, 0.07);
+@define-color c_red     #f38ba8;
+
+/* Let themes that use the standard names pick up the palette too */
+@define-color theme_bg_color @c_solid;
+@define-color theme_base_color @c_solid;
+@define-color theme_fg_color @c_text;
+@define-color theme_text_color @c_text;
+@define-color theme_selected_bg_color @c_accent;
+@define-color theme_selected_fg_color @c_crust;
+@define-color accent_color @c_accent;
+@define-color accent_bg_color @c_accent;
+
+* { font-family: "JetBrainsMono Nerd Font"; outline-color: alpha(@c_accent, 0.5); }
+
+/* ── Windows ─────────────────────────────────────────── */
+window, window.background, dialog, .background, decoration { background-color: @c_bg; color: @c_text; }
+messagedialog .dialog-action-area button, dialog .dialog-action-area button { border-radius: 10px; }
+decoration { border-radius: 12px; box-shadow: none; }
+
+headerbar, .titlebar {
+  background: transparent; border: none; box-shadow: none; color: @c_text; min-height: 40px; padding: 0 8px;
+}
+headerbar .title { font-weight: bold; }
+
+/* ── Menus, popovers, tooltips ───────────────────────── */
+menubar { background: transparent; border: none; box-shadow: none; padding: 2px 6px; }
+menubar > menuitem { color: @c_dim; border-radius: 8px; padding: 4px 10px; }
+menubar > menuitem:hover { background: @c_hover; color: @c_text; }
+menu, .menu, .context-menu, popover, popover.background {
+  background-color: rgba(24, 24, 37, 0.96); border: 1px solid @c_line; border-radius: 12px; padding: 6px;
+}
+menu menuitem, .menu menuitem { border-radius: 8px; padding: 6px 10px; color: @c_text; }
+menu menuitem:hover, .menu menuitem:hover { background: @c_hover; color: #ffffff; }
+menu separator { background: @c_line; margin: 4px 6px; }
+tooltip, tooltip.background { background-color: rgba(24, 24, 37, 0.96); border: 1px solid @c_line; border-radius: 10px; color: @c_text; }
+
+/* ── Toolbars / action bars / status bars ────────────── */
+toolbar, .toolbar, .inline-toolbar, actionbar, actionbar > revealer > box {
+  background: transparent; border: none; box-shadow: none; padding: 4px 8px;
+}
+statusbar, .statusbar { background: transparent; color: @c_dim; border-top: 1px solid @c_line; padding: 2px 10px; }
+
+/* ── Buttons ─────────────────────────────────────────── */
+button {
+  background: @c_tile; color: @c_text; border: 1px solid @c_line; border-radius: 10px;
+  box-shadow: none; text-shadow: none; -gtk-icon-shadow: none; padding: 4px 10px; min-height: 24px;
+}
+button:hover { background: @c_hover; border-color: alpha(@c_accent, 0.35); }
+button:active, button:checked { background: @c_sel; color: #ffffff; border-color: @c_accent; }
+button:disabled { opacity: 0.45; }
+button.flat, toolbar button, .toolbar button, headerbar button, actionbar button, .inline-toolbar button {
+  background: transparent; border-color: transparent;
+}
+button.flat:hover, toolbar button:hover, .toolbar button:hover, headerbar button:hover, actionbar button:hover, .inline-toolbar button:hover {
+  background: @c_hover;
+}
+button.suggested-action { background: @c_accent; color: @c_crust; border-color: @c_accent; }
+button.suggested-action:hover { background: shade(@c_accent, 1.08); }
+button.destructive-action { background: alpha(@c_red, 0.18); color: @c_red; border-color: alpha(@c_red, 0.4); }
+
+/* ── Inputs ──────────────────────────────────────────── */
+entry, spinbutton, combobox button.combo {
+  background: @c_tile; color: @c_text; border: 1px solid @c_line; border-radius: 10px;
+  box-shadow: none; padding: 4px 10px; caret-color: @c_accent;
+}
+entry:focus, spinbutton:focus { border-color: @c_accent; }
+entry selection, textview text selection, label selection, *:selected selection { background: @c_sel; color: #ffffff; }
+
+switch { background: @c_tile2; border: 1px solid @c_line; border-radius: 20px; min-height: 22px; }
+switch:checked { background: @c_accent; border-color: @c_accent; }
+switch slider { background: #ffffff; border: none; border-radius: 20px; box-shadow: none; min-width: 20px; min-height: 20px; }
+switch:checked slider { background: @c_crust; }
+
+check, radio { background: @c_tile2; border: 1px solid alpha(@c_text, 0.25); color: @c_crust; }
+check { border-radius: 6px; }
+check:checked, radio:checked { background: @c_accent; border-color: @c_accent; color: @c_crust; }
+
+scale trough, progressbar trough, levelbar trough { background: @c_tile2; border: none; border-radius: 10px; min-height: 6px; min-width: 6px; }
+scale highlight, progressbar progress, levelbar block.filled { background: @c_accent; border: none; border-radius: 10px; }
+scale slider { background: #ffffff; border: 2px solid @c_accent; border-radius: 20px; box-shadow: none; }
+
+/* ── Lists, trees, sidebars ──────────────────────────── */
+list, listview, .view, treeview.view, iconview, textview text, scrolledwindow, viewport {
+  background-color: transparent; color: @c_text;
+}
+list row, listview row { border-radius: 10px; margin: 1px 6px; }
+list row:hover, listview row:hover { background: @c_hover; }
+list row:selected, listview row:selected, treeview.view:selected, iconview:selected, .view:selected,
+treeview.view:selected:focus, .view:selected:focus, iconview:selected:focus {
+  background-color: @c_sel; color: #ffffff; border-radius: 10px;
+}
+treeview.view:hover { background-color: alpha(@c_accent, 0.06); }
+treeview.view header button, treeview header button {
+  background: transparent; color: @c_dim; border: none; border-bottom: 1px solid @c_line; border-radius: 0; box-shadow: none; font-weight: bold;
+}
+treeview.view.expander { color: @c_dim; }
+.sidebar, placessidebar, stacksidebar { background-color: @c_side; border: none; }
+.sidebar row:selected, placessidebar row:selected, stacksidebar row:selected { background: @c_accent; color: @c_crust; }
+frame > border, .frame { border: 1px solid @c_line; border-radius: 12px; }
+separator { background: @c_line; }
+paned > separator { background: @c_line; min-width: 1px; min-height: 1px; }
+rubberband, .rubberband { background-color: alpha(@c_accent, 0.18); border: 1px solid @c_accent; }
+
+/* ── Tabs ────────────────────────────────────────────── */
+notebook { background: transparent; }
+notebook > header { background: transparent; border: none; box-shadow: none; }
+notebook > header tab { border-radius: 10px; padding: 4px 12px; color: @c_dim; border: none; }
+notebook > header tab:hover { background: @c_hover; }
+notebook > header tab:checked { background: @c_tile2; color: @c_text; box-shadow: inset 0 -2px @c_accent; }
+notebook > stack { background: transparent; }
+
+/* ── Scrollbars ──────────────────────────────────────── */
+scrollbar { background: transparent; border: none; }
+scrollbar slider { background: alpha(@c_accent, 0.35); border-radius: 10px; min-width: 6px; min-height: 6px; border: none; }
+scrollbar slider:hover { background: @c_accent; }
+
+/* ── Info bars ───────────────────────────────────────── */
+infobar, infobar > revealer > box { background: @c_tile2; border-radius: 10px; border: none; }
+
+/* ── Thunar extras ───────────────────────────────────── */
+.thunar entry { padding: 4px 12px; }
+.thunar .sidebar header, .thunar treeview.view.sidebar header { color: @c_accent; font-weight: bold; }
+
+/* Tree views paint the selection per column; rounding each cell splits the bar into pieces */
+treeview.view:selected, treeview.view:selected:focus { border-radius: 0; }
