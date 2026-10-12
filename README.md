@@ -14,6 +14,12 @@ cd hyprland-dotfiles
 
 Existing configs are backed up to `~/.config-backup-<date>/` before anything is replaced.
 
+On a fresh Fedora you only need `git` + `gh` (repo is private) — the script downloads and runs the
+KooL Fedora-Hyprland installer itself. In that installer, say yes to: SDDM, GTK themes, Bibata cursor,
+zsh + oh-my-zsh, quickshell, and the NVIDIA option if the machine has an NVIDIA GPU.
+
+Not included: the full wallpaper collection (only the current wallpaper), and apps like Spotify/Firefox.
+
 ## What's in it
 
 | Area | Highlights |

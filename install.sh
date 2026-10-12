@@ -3,7 +3,8 @@
 #
 #   ./install.sh            base (KooL Fedora-Hyprland, if Hyprland isn't installed yet) + extras + these configs
 #   ./install.sh --no-base  skip the KooL base install (Hyprland already set up)
-#   ./install.sh --sddm     also apply the SDDM login fix (French keyboard + visible cursor) — asks for sudo
+#   ./install.sh --sddm     also install the Jake (sddm-astronaut) login theme + the SDDM login fix
+#                           (French keyboard + visible cursor) — asks for sudo
 #
 # Everything this replaces is copied to ~/.config-backup-<date>/ first.
 set -euo pipefail
@@ -61,6 +62,12 @@ grep -rlI "/home/rhast" "$HOME/.config/"{hypr,waybar,rofi,kitty,quickshell,fastf
 sed -i "s|hello, rhast|hello, $USER|" "$HOME/.config/fastfetch/config-wall.jsonc"
 sed -i "s|\${SUDO_USER:-rhast}|\${SUDO_USER:-$USER}|" "$HOME/.config/hypr/UserScripts/sddm-login-fix.sh"
 
+# NVIDIA-only environment variables break GL/VA-API on machines without an NVIDIA GPU
+if ! lspci 2>/dev/null | grep -qiE "vga.*nvidia|3d.*nvidia"; then
+    sed -i -E 's/^(\s*env\s*=\s*(LIBVA_DRIVER_NAME|__GLX_VENDOR_LIBRARY_NAME),nvidia)/# (no NVIDIA GPU) \1/' \
+        "$HOME/.config/hypr/configs/ENVariables.conf" "$HOME/.config/hypr/UserConfigs/ENVariables.conf" 2>/dev/null || true
+fi
+
 # Waybar layout/style symlinks
 ln -sfn "$HOME/.config/waybar/configs/[TOP] Default Laptop" "$HOME/.config/waybar/config"
 ln -sfn "$HOME/.config/waybar/style/[0 VERTICAL] [Catpuccin] Mocha.css" "$HOME/.config/waybar/style.css"
@@ -105,6 +112,15 @@ xdg-mime default org.gnome.Nautilus.desktop inode/directory 2>/dev/null || true
 
 # 8. Optional: SDDM login screen fix
 if (( SDDM )); then
+    say "Installing the Jake login theme (sddm-astronaut-theme)"
+    sudo dnf install -y sddm qt6-qtsvg qt6-qtvirtualkeyboard qt6-qtmultimedia
+    T=/usr/share/sddm/themes/sddm-astronaut-theme
+    if [[ ! -d "$T" ]]; then
+        sudo git clone --depth=1 https://github.com/Keyitdev/sddm-astronaut-theme.git "$T"
+        sudo cp -r "$T/Fonts/." /usr/share/fonts/ 2>/dev/null || true
+    fi
+    sudo sed -i 's|^ConfigFile=.*|ConfigFile=Themes/jake_the_dog.conf|' "$T/metadata.desktop"
+    printf '[Theme]\nCurrent=sddm-astronaut-theme\n' | sudo tee /etc/sddm.conf.d/10-theme.conf >/dev/null
     say "Applying the SDDM login fix"
     sudo bash "$HOME/.config/hypr/UserScripts/sddm-login-fix.sh"
 fi
