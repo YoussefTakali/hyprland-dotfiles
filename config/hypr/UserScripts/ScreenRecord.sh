@@ -36,7 +36,8 @@ start() {   # $1 = full|area, $2 = audio|""
         exit 1
     fi
     mkdir -p "$DIR"
-    local file="$DIR/rec_$(date +%Y-%m-%d_%H-%M-%S).mp4" args=(-f "$file")
+    local file="$DIR/rec_$(date +%Y-%m-%d_%H-%M-%S).mp4"
+    local args=(-f "$file")
     if [[ $1 == area ]]; then
         geo=$(slurp -d) || exit 0
         args+=(-g "$geo")
