@@ -6,87 +6,95 @@
   "control-center-layer": "top",
   "layer-shell": true,
   "cssPriority": "user",
-  "control-center-margin-top": 5,
+  "control-center-margin-top": 8,
   "control-center-margin-bottom": 0,
   "control-center-margin-right": 0,
   "control-center-margin-left": 0,
   "notification-2fa-action": true,
   "notification-inline-replies": false,
-  "notification-icon-size": 24,
-  "notification-body-image-height": 100,
-  "notification-body-image-width": 100,
-  "notification-window-width": 300,
+  "notification-icon-size": 40,
+  "notification-body-image-height": 120,
+  "notification-body-image-width": 200,
+  "notification-window-width": 380,
   "timeout": 6,
   "timeout-low": 3,
   "timeout-critical": 0,
   "fit-to-screen": false,
-  "control-center-width": 450,
-  "control-center-height": 720,
+  "control-center-width": 460,
+  "control-center-height": 760,
   "keyboard-shortcuts": true,
   "image-visibility": "when-available",
-  "transition-time": 200,
+  "transition-time": 250,
   "hide-on-clear": false,
   "hide-on-action": true,
   "script-fail-notify": true,
   "widgets": [
-      "dnd",
-      "buttons-grid",
-      "mpris",
-      "volume", 
-      "backlight",
-      "title",
-      "notifications"
+    "title",
+    "dnd",
+    "buttons-grid",
+    "mpris",
+    "volume",
+    "backlight",
+    "notifications"
   ],
   "widget-config": {
-      "title": {
-          "text": "Notifications",
-          "clear-all-button": true,
-          "button-text": "Clear"
-      },
-      "dnd": {
-          "text": "Do Not Disturb"
-      },
-      "label": {
-          "max-lines": 1,
-          "text": "Notification"
-      },
-      "mpris": {
-          "image-size": 10,
-          "image-radius": 0
-      },
-      "volume": {
-          "label": "󰕾"
-      },
-      "backlight": {
-          "label": "󰃟"
-      },
-      "buttons-grid": {
-          "actions": [
-              {
-                  "label": "󰐥",
-                  "command": "bash -c $HOME/.config/hypr/scripts/Wlogout.sh"
-              },
-              {
-                  "label": "󰌾",
-                  "command": "bash -c $HOME/.config/hypr/scripts/LockScreen.sh"
-              },
-              {
-                  "label": "󰍃",
-                  "command": "hyprctl dispatch exit"
-              },
-              {
-                  "label": "󰀝",
-                  "command": "bash -c $HOME/.config/hypr/scripts/AirplaneMode.sh"
-              },
-              {
-                  "label": "󰝟",
-                  "command": "pactl set-sink-mute @DEFAULT_SINK@ toggle"
-              },
-              {
-                  "label": "󰂯",
-                  "command": "blueman-manager"
-              }
-          ]
-      }
+    "title": {
+      "text": "Notifications",
+      "clear-all-button": true,
+      "button-text": "Clear all"
+    },
+    "dnd": {
+      "text": "Do not disturb"
+    },
+    "label": {
+      "max-lines": 1,
+      "text": "Notification"
+    },
+    "mpris": {
+      "image-size": 64,
+      "image-radius": 12
+    },
+    "volume": {
+      "label": "󰕾"
+    },
+    "backlight": {
+      "label": "󰃟"
+    },
+    "buttons-grid": {
+      "actions": [
+        {
+          "label": "󰖩",
+          "command": "bash -c 'swaync-client -cp; $HOME/.config/hypr/UserScripts/NetMenu.sh --wifi'"
+        },
+        {
+          "label": "󰂯",
+          "command": "bash -c 'swaync-client -cp; $HOME/.config/hypr/UserScripts/NetMenu.sh --bluetooth'"
+        },
+        {
+          "label": "󰓅",
+          "command": "bash -c 'swaync-client -cp; $HOME/.config/hypr/UserScripts/PowerProfile.sh'"
+        },
+        {
+          "label": "󰖨",
+          "command": "bash -c 'swaync-client -cp; $HOME/.config/hypr/scripts/Hyprsunset.sh toggle'"
+        },
+        {
+          "label": "󰹑",
+          "command": "bash -c 'swaync-client -cp; sleep 0.4; $HOME/.config/hypr/scripts/ScreenShot.sh --swappy'"
+        },
+        {
+          "label": "󰑋",
+          "command": "bash -c 'swaync-client -cp; $HOME/.config/hypr/UserScripts/ScreenRecord.sh --toggle'"
+        },
+        {
+          "label": "󰌾",
+          "command": "bash -c 'swaync-client -cp; $HOME/.config/hypr/scripts/LockScreen.sh'"
+        },
+        {
+          "label": "󰐥",
+          "command": "bash -c 'swaync-client -cp; $HOME/.config/hypr/scripts/Wlogout.sh'"
+        }
+      ]
+    }
   }
 }
