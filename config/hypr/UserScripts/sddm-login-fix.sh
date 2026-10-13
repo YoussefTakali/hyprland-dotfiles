@@ -1,56 +1,40 @@
 #!/usr/bin/env bash
-# SDDM login screen fixes (run once with sudo):
-#   - French AZERTY keyboard on the login screen (the greeter runs on Weston, which ignores localectl's X11 layout)
-#   - visible mouse cursor (NVIDIA hides Weston's hardware cursor; WESTON_FORCE_RENDERER draws it in software,
-#     like cursor:no_hardware_cursors in Hyprland) using your Bibata-Modern-Ice cursor theme
-#   - touchpad tap-to-click on the login screen
-# Undo: sudo rm /etc/sddm.conf.d/20-login-fix.conf /etc/sddm/weston.ini
+# SDDM login screen fixes (run once with sudo): visible mouse cursor + French AZERTY keyboard.
+#
+# v2: runs the login screen (greeter) on X11 instead of Weston. Weston's cursor stayed invisible on this
+# laptop; X11 draws the cursor itself and already uses the localectl layout (fr / azerty).
+# Your desktop session (Hyprland) still runs on Wayland — only the login screen changes.
+#
+# Undo: sudo rm /etc/sddm.conf.d/20-login-fix.conf   (back to SDDM's defaults)
 set -euo pipefail
 [[ $EUID -eq 0 ]] || { echo "Run with sudo: sudo bash $0"; exit 1; }
 
 USER_HOME=$(getent passwd "${SUDO_USER:-rhast}" | cut -d: -f6)
 CURSOR=Bibata-Modern-Ice
 
-# 1. Cursor theme readable by the sddm user (it can't read your home folder)
+# 1. X11 greeter packages
+dnf install -y sddm-x11 xorg-x11-server-Xorg
+
+# 2. Cursor theme readable by the sddm user (it can't read your home folder)
 if [[ -d "$USER_HOME/.icons/$CURSOR" && ! -d "/usr/share/icons/$CURSOR" ]]; then
     cp -r "$USER_HOME/.icons/$CURSOR" /usr/share/icons/
-    chown -R root:root "/usr/share/icons/$CURSOR"
     chmod -R a+rX "/usr/share/icons/$CURSOR"
-    echo "Copied cursor theme to /usr/share/icons/$CURSOR"
 fi
 
-# 2. Weston config for the greeter
-mkdir -p /etc/sddm
-cat > /etc/sddm/weston.ini <<EOF
-# Weston config for the SDDM login screen (written by sddm-login-fix.sh)
-[core]
-shell=kiosk
+# 3. Keyboard layout for X11 (same as the console / desktop)
+localectl set-x11-keymap fr pc105 azerty
 
-[keyboard]
-keymap_layout=fr
-keymap_variant=azerty
-
-[shell]
-cursor-theme=$CURSOR
-cursor-size=24
-
-[libinput]
-enable-tap=true
-EOF
-
-# 3. SDDM: Wayland greeter on Weston with that config, software cursor, matching Qt cursor
+# 4. SDDM: X11 greeter with the Bibata cursor (keeps your theme — Jake / sddm-astronaut)
+[[ -f /etc/sddm.conf.d/20-login-fix.conf ]] && cp -a /etc/sddm.conf.d/20-login-fix.conf /etc/sddm.conf.d/20-login-fix.conf.weston.bak
 cat > /etc/sddm.conf.d/20-login-fix.conf <<EOF
-# Written by sddm-login-fix.sh — French keyboard + visible cursor on the login screen
+# Written by sddm-login-fix.sh v2 — X11 login screen: visible cursor + French keyboard
 [General]
-DisplayServer=wayland
-GreeterEnvironment=XCURSOR_THEME=$CURSOR,XCURSOR_SIZE=24,XKB_DEFAULT_LAYOUT=fr,XKB_DEFAULT_VARIANT=azerty
-
-[Wayland]
-CompositorCommand=env WESTON_FORCE_RENDERER=1 XKB_DEFAULT_LAYOUT=fr XKB_DEFAULT_VARIANT=azerty weston --shell=kiosk -c /etc/sddm/weston.ini
+DisplayServer=x11
 
 [Theme]
 CursorTheme=$CURSOR
 CursorSize=24
 EOF
 
-echo "Done. The login screen uses these settings from the next logout or reboot."
+echo "Done. Reboot (or log out) to see the new login screen."
+echo "If it ever fails to appear: Ctrl+Alt+F3, log in, run: sudo rm /etc/sddm.conf.d/20-login-fix.conf"

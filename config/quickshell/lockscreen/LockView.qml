@@ -42,6 +42,16 @@ Item {
         cache: false
         visible: false
     }
+    // ── Power buttons logic (on the page root so the buttons can call view.power / view.armed) ─
+    property string armed: ""
+    Timer { id: disarm; interval: 3000; onTriggered: view.armed = "" }
+    Process { id: powerProc }
+    function power(action) {
+        if (view.shell.preview) { armed = action; disarm.restart(); return; }
+        if (armed === action) { powerProc.command = ["systemctl", action]; powerProc.running = true; armed = ""; }
+        else { armed = action; disarm.restart(); }
+    }
+
     // Fade the whole page in
     opacity: 0
     Component.onCompleted: opacity = 1
@@ -202,14 +212,6 @@ Item {
     }
 
     // ── Power buttons (two clicks within 3 s) ─────────
-    property string armed: ""
-    Timer { id: disarm; interval: 3000; onTriggered: view.armed = "" }
-    Process { id: powerProc }
-    function power(action) {
-        if (view.shell.preview) { armed = action; disarm.restart(); return; }
-        if (armed === action) { powerProc.command = ["systemctl", action]; powerProc.running = true; armed = ""; }
-        else { armed = action; disarm.restart(); }
-    }
 
     Row {
         anchors.horizontalCenter: parent.horizontalCenter
