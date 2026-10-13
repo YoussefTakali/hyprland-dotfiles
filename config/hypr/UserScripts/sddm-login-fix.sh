@@ -13,7 +13,8 @@ USER_HOME=$(getent passwd "${SUDO_USER:-rhast}" | cut -d: -f6)
 CURSOR=Bibata-Modern-Ice
 
 # 1. X11 greeter packages
-dnf install -y sddm-x11 xorg-x11-server-Xorg
+rpm -q sddm-x11 >/dev/null || dnf swap -y sddm-wayland-generic sddm-x11   # the two greeter packages conflict
+dnf install -y xorg-x11-server-Xorg
 
 # 2. Cursor theme readable by the sddm user (it can't read your home folder)
 if [[ -d "$USER_HOME/.icons/$CURSOR" && ! -d "/usr/share/icons/$CURSOR" ]]; then
