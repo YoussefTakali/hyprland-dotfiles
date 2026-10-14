@@ -111,6 +111,14 @@ gsettings set org.gnome.desktop.interface color-scheme 'prefer-dark' || true
 gsettings set org.blueman.general plugin-list "['!StatusIcon', '!StatusNotifierItem']" 2>/dev/null || true
 xdg-mime default org.gnome.Nautilus.desktop inode/directory 2>/dev/null || true
 
+# 7b. Firefox: solid address bar dropdown (the GTK theme's see-through fields made it unreadable)
+for prof in "$HOME"/.mozilla/firefox/*.default-release "$HOME"/.config/mozilla/firefox/*.default-release; do
+    [[ -d "$prof" ]] || continue
+    mkdir -p "$prof/chrome"
+    cp "$HERE/firefox/userChrome.css" "$prof/chrome/"
+    cp "$HERE/firefox/user.js" "$prof/"
+done
+
 # 8. Optional: SDDM login screen fix
 if (( SDDM )); then
     say "Installing the Jake login theme (sddm-astronaut-theme)"

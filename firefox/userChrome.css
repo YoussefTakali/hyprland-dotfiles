@@ -1,0 +1,25 @@
+/* Solid backgrounds for the address bar dropdown, menus and panels (2026-10-14).
+   Firefox's "System theme" takes its colors from ~/.config/gtk-3.0/gtk.css, whose fields are
+   see-through for Hyprland's blur, so the URL suggestions had no background. Catppuccin Mocha. */
+:root {
+  --toolbar-field-background-color: #313244 !important;
+  --toolbar-field-color: #cdd6f4 !important;
+  --toolbar-field-focus-background-color: #1e1e2e !important;
+  --toolbar-field-focus-color: #cdd6f4 !important;
+  --toolbar-field-focus-border-color: #cba6f7 !important;
+  --arrowpanel-background: #1e1e2e !important;
+  --arrowpanel-color: #cdd6f4 !important;
+  --panel-background: #1e1e2e !important;
+  --panel-color: #cdd6f4 !important;
+  --menu-background-color: #1e1e2e !important;
+  --menu-color: #cdd6f4 !important;
+  --urlbarView-highlight-background: #cba6f7 !important;
+  --urlbarView-highlight-color: #11111b !important;
+  --urlbarView-hover-background: #313244 !important;
+}
+#urlbar-background, .urlbar-background { background-color: #313244 !important; }
+#urlbar[open] > #urlbar-background, #urlbar[open] > .urlbar-background,
+#urlbar[focused] > #urlbar-background, #urlbar[focused] > .urlbar-background,
+.urlbarView { background-color: #1e1e2e !important; color: #cdd6f4 !important; }
+#searchbar, .searchbar-textbox { background-color: #313244 !important; color: #cdd6f4 !important; }
+menupopup, panel { --panel-background: #1e1e2e !important; }
