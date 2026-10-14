@@ -71,8 +71,10 @@ notificationwindow, blankwindow { background: transparent; }
   background: @surface;
   color: @text;
   border: none;
-  border-radius: 9px;
-  padding: 6px 10px;
+  border-radius: 8px;
+  padding: 3px 10px;
+  min-height: 26px;
+  font-size: 12px;
   box-shadow: none;
 }
 .notification-action > button:hover { background: @accent; color: @crust; }
@@ -159,6 +161,7 @@ notificationwindow, blankwindow { background: transparent; }
   font-size: 20px;
   box-shadow: none;
 }
+.widget-buttons-grid > flowbox > flowboxchild > button label { font-size: 20px; }
 .widget-buttons-grid > flowbox > flowboxchild > button:hover { background: @accent; color: @crust; }
 .widget-buttons-grid > flowbox > flowboxchild > button.toggle:checked { background: @accent; color: @crust; }
 
@@ -172,7 +175,7 @@ notificationwindow, blankwindow { background: transparent; }
   margin: 0;
   box-shadow: none;
 }
-.widget-mpris-player .mpris-overlay { background: alpha(@base, 0.82); padding: 12px; border-radius: 14px; }
+.widget-mpris-player .mpris-overlay { background: alpha(@base, 0.9); padding: 12px; border-radius: 14px; }
 .widget-mpris-album-art { border-radius: 10px; }
 .widget-mpris-title { font-size: 14px; font-weight: bold; color: @text; }
 .widget-mpris-subtitle { font-size: 12px; color: @accent; }
