@@ -35,7 +35,8 @@ printf '%d' $$ >"$pidfile"
 # Unique temp config + cleanup on exit
 config_file="$(mktemp "$RUNTIME_DIR/waybar-cava.XXXXXX.conf")"
 cleanup() { rm -f "$config_file" "$pidfile"; }
-trap cleanup EXIT INT TERM
+trap cleanup EXIT
+trap 'exit 0' INT TERM HUP   # exit (not just clean up) when Waybar or the user stops us
 
 cat >"$config_file" <<EOF
 [general]
@@ -56,7 +57,9 @@ EOF
 # Stream cava output and translate digits 0..7 to bar glyphs.
 # cava exits when the audio device changes (e.g. Bluetooth headphones reconnect), so restart it
 # instead of letting the Waybar module die.
-while true; do
+# Stop as soon as the Waybar that started us is gone (otherwise every bar restart leaves an orphan loop behind).
+parent=$PPID
+while kill -0 "$parent" 2>/dev/null; do
   cava -p "$config_file" | sed -u "$dict" || true
   sleep 1
 done
