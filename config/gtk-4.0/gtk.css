@@ -1,5 +1,6 @@
 /* GTK4 / libadwaita apps (Nautilus, pavucontrol, …): shared palette + a few modern touches (2026-10-12) */
 @import url("file:///home/rhast/.config/gtk-theme/mauve-palette.css");
+@import url("file:///home/rhast/.config/gtk-theme/accent.css");   /* accent from the wallpaper (AccentGuard.py) */
 
 * { font-family: "JetBrainsMono Nerd Font"; }
 

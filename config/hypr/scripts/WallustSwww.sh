@@ -57,3 +57,4 @@ cp -f "$wallpaper_path" "$wallpaper_current" || true
 # Run wallust (silent) to regenerate templates defined in ~/.config/wallust/wallust.toml
 # -s is used in this repo to keep things quiet and avoid extra prompts
 wallust run -s "$wallpaper_path" || true
+python3 -I "$HOME/.config/hypr/scripts/AccentGuard.py" || true   # readable accent + GTK/kitty accent

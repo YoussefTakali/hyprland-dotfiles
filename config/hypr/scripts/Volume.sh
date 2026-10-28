@@ -29,8 +29,13 @@ get_icon() {
     fi
 }
 
-# Notify
+# Notify (glass OSD via Osd.sh since 2026-10-28; the notifications below are the fallback if the OSD isn't running)
 notify_user() {
+    local m=""; [[ "$(pamixer --get-mute)" == "true" || "$(pamixer --get-volume)" -eq 0 ]] && m=muted
+    if "$sDIR/Osd.sh" volume "$(pamixer --get-volume)" $m; then
+        [[ -z $m ]] && "$sDIR/Sounds.sh" --volume
+        return
+    fi
     if [[ "$(get_volume)" == "Muted" ]]; then
         notify-send -e -h string:x-canonical-private-synchronous:volume_notif -h boolean:SWAYNC_BYPASS_DND:true -u low -i "$(get_icon)" " Volume:" " Muted"
     else
@@ -60,18 +65,18 @@ dec_volume() {
 # Toggle Mute
 toggle_mute() {
 	if [ "$(pamixer --get-mute)" == "false" ]; then
-		pamixer -m && notify-send -e -u low -h boolean:SWAYNC_BYPASS_DND:true -i "$iDIR/volume-mute.png" " Mute"
+		pamixer -m && { "$sDIR/Osd.sh" volume "$(pamixer --get-volume)" muted || notify-send -e -u low -h boolean:SWAYNC_BYPASS_DND:true -i "$iDIR/volume-mute.png" " Mute"; }
 	elif [ "$(pamixer --get-mute)" == "true" ]; then
-		pamixer -u && notify-send -e -u low -h boolean:SWAYNC_BYPASS_DND:true -i "$(get_icon)" " Volume:" " Switched ON"
+		pamixer -u && { "$sDIR/Osd.sh" volume "$(pamixer --get-volume)" || notify-send -e -u low -h boolean:SWAYNC_BYPASS_DND:true -i "$(get_icon)" " Volume:" " Switched ON"; }
 	fi
 }
 
 # Toggle Mic
 toggle_mic() {
 	if [ "$(pamixer --default-source --get-mute)" == "false" ]; then
-		pamixer --default-source -m && notify-send -e -u low -h boolean:SWAYNC_BYPASS_DND:true -i "$iDIR/microphone-mute.png" " Microphone:" " Switched OFF"
+		pamixer --default-source -m && { "$sDIR/Osd.sh" mic "$(pamixer --default-source --get-volume)" muted || notify-send -e -u low -h boolean:SWAYNC_BYPASS_DND:true -i "$iDIR/microphone-mute.png" " Microphone:" " Switched OFF"; }
 	elif [ "$(pamixer --default-source --get-mute)" == "true" ]; then
-		pamixer -u --default-source u && notify-send -e -u low -h boolean:SWAYNC_BYPASS_DND:true -i "$iDIR/microphone.png" " Microphone:" " Switched ON"
+		pamixer -u --default-source u && { "$sDIR/Osd.sh" mic "$(pamixer --default-source --get-volume)" || notify-send -e -u low -h boolean:SWAYNC_BYPASS_DND:true -i "$iDIR/microphone.png" " Microphone:" " Switched ON"; }
 	fi
 }
 # Get Mic Icon
@@ -96,6 +101,7 @@ get_mic_volume() {
 
 # Notify for Microphone
 notify_mic_user() {
+    "$sDIR/Osd.sh" mic "$(pamixer --default-source --get-volume)" && return
     volume=$(get_mic_volume)
     icon=$(get_mic_icon)
     notify-send -e -h int:value:"$volume" -h "string:x-canonical-private-synchronous:volume_notif" -h boolean:SWAYNC_BYPASS_DND:true -u low -i "$icon"  " Mic Level:" " $volume"

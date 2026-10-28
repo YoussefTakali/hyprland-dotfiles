@@ -70,8 +70,9 @@ if ! lspci 2>/dev/null | grep -qiE "vga.*nvidia|3d.*nvidia"; then
 fi
 
 # Waybar layout/style symlinks
-ln -sfn "$HOME/.config/waybar/configs/[TOP] Default Laptop" "$HOME/.config/waybar/config"
-ln -sfn "$HOME/.config/waybar/style/[0 VERTICAL] [Catpuccin] Mocha.css" "$HOME/.config/waybar/style.css"
+# Glass Islands bar (the previous "[TOP] Default Laptop" + "[0 VERTICAL] [Catpuccin] Mocha.css" stay in the Waybar menus)
+ln -sfn "$HOME/.config/waybar/configs/[TOP] Glass Islands" "$HOME/.config/waybar/config"
+ln -sfn "$HOME/.config/waybar/style/[Glass] Islands.css" "$HOME/.config/waybar/style.css"
 
 # Scripts executable
 find "$HOME/.config/hypr" "$HOME/.config/fastfetch" -name '*.sh' -exec chmod +x {} +
@@ -90,6 +91,7 @@ W=$(ls "$HERE"/wallpapers/current.* | head -1)
 cp "$W" "$HOME/Pictures/wallpapers/"
 cp "$W" "$HOME/.config/hypr/wallpaper_effects/.wallpaper_current"
 command -v wallust >/dev/null && wallust run "$W" >/dev/null 2>&1 || true
+python3 -I "$HOME/.config/hypr/scripts/AccentGuard.py" >/dev/null 2>&1 || true   # readable accent + GTK/kitty accent
 
 # 6. Mauve folder icons: recolor Flat-Remix-Blue-Dark's folders (installed by the KooL base)
 SRC_ICONS="$HOME/.icons/Flat-Remix-Blue-Dark"

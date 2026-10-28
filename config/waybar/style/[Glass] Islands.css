@@ -1,0 +1,126 @@
+/* Glass Islands (2026-10-28) — pairs with the "[TOP] Glass Islands" layout.
+   Three floating glass groups; every colour comes from the wallpaper (wallust, made readable by AccentGuard.py).
+   Icons take the accent, text is soft white, red/amber only mean something (low battery, recording, hot, offline).
+   Previous style: "[0 VERTICAL] [Catpuccin] Mocha.css" (still in the Waybar style menu). */
+
+@import "../waybar/wallust/colors-waybar.css";
+
+@define-color accent  @color13;
+@define-color accent2 @color12;
+@define-color glass   rgba(17, 17, 27, 0.60);
+@define-color edge    rgba(255, 255, 255, 0.09);
+@define-color text    #e6e9f5;
+@define-color dim     rgba(230, 233, 245, 0.55);
+@define-color warn    #f9e2af;
+@define-color danger  #f38ba8;
+
+* {
+  font-family: "Montserrat", "JetBrainsMono Nerd Font";
+  font-weight: 600;
+  font-size: 13px;
+  font-feature-settings: "tnum";
+  min-height: 0;
+  border: none;
+  box-shadow: none;
+  text-shadow: none;
+}
+
+window#waybar { background: transparent; }
+
+/* the three islands */
+.modules-left, .modules-center, .modules-right {
+  background: @glass;
+  border: 1px solid @edge;
+  border-radius: 14px;
+  padding: 0 6px;
+}
+
+/* every module */
+.module {
+  color: @text;
+  padding: 0 9px;
+  margin: 4px 1px;
+  border-radius: 10px;
+  transition: background-color 180ms ease, color 180ms ease;
+}
+.module:hover { background: alpha(@accent, 0.16); }
+
+/* icon-only modules carry the accent */
+#custom-menu, #network, #bluetooth, #custom-clipboard, #custom-nightlight, #idle_inhibitor,
+#custom-hint, #custom-swaync, #custom-power, #backlight, #custom-cava_mviz, #tray {
+  color: @accent;
+}
+#custom-power { padding: 0 11px 0 9px; }
+
+/* tooltips */
+tooltip {
+  background: rgba(17, 17, 27, 0.94);
+  border: 1px solid alpha(@accent, 0.55);
+  border-radius: 12px;
+}
+tooltip label { color: @text; padding: 4px 6px; }
+
+/* ── Workspaces: a sliding accent pill for the active one, dots for the rest ── */
+#workspaces { margin: 0 4px; padding: 0 2px; }
+/* the button is an invisible hit area; the dot / pill is drawn on its label (labels keep their own height) */
+#workspaces button {
+  min-width: 0; min-height: 0;
+  margin: 0; padding: 0 2px;
+  background: transparent;
+  border-radius: 99px;
+}
+#workspaces button label {
+  min-width: 8px;
+  min-height: 8px;
+  margin: 15px 0;            /* the workspaces strip is 38 px tall: 15 + 8 + 15 */
+  padding: 0;
+  border-radius: 99px;
+  background: rgba(255, 255, 255, 0.55);   /* has windows */
+  color: transparent;
+  font-size: 1px;
+  transition: all 260ms cubic-bezier(.4, 0, .2, 1);
+}
+#workspaces button.empty label { background: rgba(255, 255, 255, 0.18); }
+#workspaces button:hover { background: transparent; }
+#workspaces button:hover label { background: alpha(@accent, 0.75); }
+#workspaces button.active label {
+  min-width: 30px;
+  min-height: 18px;
+  margin: 10px 0;
+  background: @accent;
+  color: #11111b;
+  font-size: 11px;
+  font-weight: 800;
+}
+#workspaces button.urgent label { background: @danger; }
+
+/* clock: the one big text in the bar */
+#clock { font-size: 14px; font-weight: 700; color: @text; padding: 0 12px; }
+
+/* music */
+#custom-playerctl { color: @text; }
+#custom-playerctl.Paused { color: @dim; }
+
+/* network speed: only appears while something transfers */
+#custom-netspeed { color: @dim; font-size: 12px; }
+#custom-netspeed.idle { padding: 0; margin: 0; }
+
+/* states that mean something */
+#network.disconnected, #network.disabled { color: @danger; }
+#bluetooth.off, #bluetooth.disabled { color: @dim; }
+#battery { color: @text; }
+#battery.warning:not(.charging) { color: @warn; }
+#battery.critical:not(.charging) { color: @danger; background: alpha(@danger, 0.15); }
+#battery.charging { color: @accent; }
+#temperature.critical { color: @danger; }
+#custom-gpu.high { color: @warn; }
+#custom-gpu.critical { color: @danger; }
+#custom-recorder.recording { color: @danger; background: alpha(@danger, 0.16); }
+#idle_inhibitor.activated { background: alpha(@accent, 0.22); }
+#privacy-item { color: @danger; padding: 0 4px; }
+#pulseaudio.muted { color: @dim; }
+
+/* sliders inside drawers */
+#pulseaudio-slider trough, #backlight-slider trough { min-width: 80px; min-height: 6px; border-radius: 6px; background: rgba(255, 255, 255, 0.15); }
+#pulseaudio-slider highlight, #backlight-slider highlight { border-radius: 6px; background: @accent; }
+#pulseaudio-slider slider, #backlight-slider slider { min-width: 0; min-height: 0; opacity: 0; }

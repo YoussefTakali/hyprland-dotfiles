@@ -49,6 +49,7 @@ no-effects() {
     wait $!
     wallust run "$wallpaper_current" -s &&
     wait $!
+    python3 -I "$HOME/.config/hypr/scripts/AccentGuard.py" || true   # readable accent + GTK/kitty accent
     # Refresh rofi, waybar, wallust palettes
 	sleep 2
 	"$SCRIPTSDIR/Refresh.sh"
@@ -89,6 +90,7 @@ main() {
   
             wallust run "$wallpaper_output" -s &
             sleep 1
+            python3 -I "$HOME/.config/hypr/scripts/AccentGuard.py" || true   # readable accent + GTK/kitty accent
             # Refresh rofi, waybar, wallust palettes
             "${SCRIPTSDIR}/Refresh.sh"
             notify-send -u low -i "$iDIR/ja.png" "$choice" "effects applied"

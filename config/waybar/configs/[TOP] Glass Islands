@@ -1,0 +1,53 @@
+/* Glass Islands (2026-10-28): floating bar in three rounded glass groups, colours from the wallpaper.
+   Style: "[Glass] Islands.css". The previous layout is still "[TOP] Default Laptop" (Waybar layout menu). */
+{
+"include": [
+  "$HOME/.config/waybar/Modules",
+  "$HOME/.config/waybar/ModulesWorkspaces",
+  "$HOME/.config/waybar/ModulesCustom",
+  "$HOME/.config/waybar/ModulesGroups",
+  "$HOME/.config/waybar/UserModules",
+  "$HOME/.config/waybar/ModulesIslands",
+  ],
+"layer": "top",
+"exclusive": true,
+"passthrough": false,
+"position": "top",
+"height": 40,
+"spacing": 2,
+"fixed-center": true,
+"ipc": true,
+"margin-top": 6,
+"margin-left": 10,
+"margin-right": 10,
+
+"modules-left": [
+	"custom/menu",
+	"custom/cava_mviz",
+	"custom/recorder",
+	"custom/playerctl",
+	],
+
+"modules-center": [
+	"hyprland/workspaces#pills",
+	"clock#island",
+	"custom/weather",
+	],
+
+"modules-right": [
+	"privacy",
+	"tray",
+	"custom/netspeed",
+	"network#icon",
+	"bluetooth#icon",
+	"group/audio",
+	"group/laptop",
+	"group/hw_drawer",
+	"custom/clipboard",
+	"custom/nightlight",
+	"idle_inhibitor",
+	"custom/hint#icon",
+	"custom/swaync",
+	"custom/power#island",
+	],
+}

@@ -1,0 +1,64 @@
+// Modules used only by the "[TOP] Glass Islands" layout (2026-10-28). The other layouts don't load this file.
+{
+"hyprland/workspaces#pills": {
+  "format": "{name}",
+  "persistent-workspaces": { "*": 5 },
+  "on-click": "activate",
+  "on-scroll-up": "hyprctl dispatch workspace e+1",
+  "on-scroll-down": "hyprctl dispatch workspace e-1",
+  "show-special": false,
+  "sort-by-number": true
+},
+"clock#island": {
+  "interval": 1,
+  "format": "{:%I:%M %p}",
+  "tooltip": false,
+  "on-click": "$HOME/.config/hypr/UserScripts/CalendarPopup.sh"
+},
+"network#icon": {
+  "interval": 5,
+  "format-wifi": "{icon}",
+  "format-icons": ["󰤯", "󰤟", "󰤢", "󰤥", "󰤨"],
+  "format-ethernet": "󰈀",
+  "format-linked": "󰈀",
+  "format-disconnected": "󰤮",
+  "format-disabled": "󰤮",
+  "tooltip-format-wifi": "{essid}, signal {signalStrength}%\n{ipaddr}\n\nClick: Wi-Fi menu",
+  "tooltip-format-ethernet": "{ifname}, {ipaddr}",
+  "tooltip-format-disconnected": "Offline\nClick: Wi-Fi menu",
+  "on-click": "$HOME/.config/hypr/UserScripts/NetMenu.sh --wifi",
+  "on-click-right": "kitty -e nmtui"
+},
+"custom/netspeed": {
+  "exec": "$HOME/.config/hypr/UserScripts/NetSpeed.sh",
+  "return-type": "json",
+  "restart-interval": 5,
+  "format": "{}",
+  "tooltip": true
+},
+"bluetooth#icon": {
+  "format": "󰂯",
+  "format-off": "󰂲",
+  "format-disabled": "󰂲",
+  "format-connected": "󰂱",
+  "format-connected-battery": "󰂱",
+  "tooltip-format": "Bluetooth on, no device\nClick: devices",
+  "tooltip-format-off": "Bluetooth off\nClick: turn on",
+  "tooltip-format-connected": "{device_enumerate}\n\nClick: devices, right click: Blueman",
+  "tooltip-format-enumerate-connected": "{device_alias}",
+  "tooltip-format-enumerate-connected-battery": "{device_alias}, battery {device_battery_percentage}%",
+  "on-click": "$HOME/.config/hypr/UserScripts/NetMenu.sh --bluetooth",
+  "on-click-right": "blueman-manager"
+},
+"custom/hint#icon": {
+  "format": "󰌌",
+  "tooltip-format": "Click: cheat sheet\nRight click: all keybinds",
+  "on-click": "$HOME/.config/hypr/scripts/KeyHints.sh",
+  "on-click-right": "$HOME/.config/hypr/scripts/KeyBinds.sh"
+},
+"custom/power#island": {
+  "format": "󰐥",
+  "tooltip-format": "Power menu",
+  "on-click": "$HOME/.config/hypr/scripts/Wlogout.sh"
+}
+}

@@ -26,6 +26,8 @@ send_notification() {
     local brightness=$1
     local icon_path=$2
 
+    # glass OSD (2026-10-28); the notification is the fallback if the OSD isn't running
+    "$HOME/.config/hypr/scripts/Osd.sh" brightness "$brightness" && return
     notify-send -e \
         -h string:x-canonical-private-synchronous:brightness_notif \
         -h int:value:"$brightness" \
