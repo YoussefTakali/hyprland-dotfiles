@@ -31,7 +31,10 @@ sleep 0.1
 #ags -q && ags &
 
 # quit quickshell & relaunch quickshell
-pkill qs && qs &
+# (2026-10-28) only the KooL overview: `pkill qs` also killed the volume/brightness OSD, the calendar popup and
+# could kill the lock screen; and the bare `qs` it relaunched has no config here, so the overview stayed dead.
+pkill -f "[q]s -c overview"; sleep 0.2; setsid -f qs -c overview >/dev/null 2>&1
+pgrep -f "[q]uickshell/osd/shell.qml" >/dev/null || setsid -f qs -p "$HOME/.config/quickshell/osd/shell.qml" >/dev/null 2>&1
 
 # some process to kill
 for pid in $(pidof waybar rofi swaync ags swaybg); do
