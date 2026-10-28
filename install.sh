@@ -70,9 +70,10 @@ if ! lspci 2>/dev/null | grep -qiE "vga.*nvidia|3d.*nvidia"; then
 fi
 
 # Waybar layout/style symlinks
-# Glass Islands bar (the previous "[TOP] Default Laptop" + "[0 VERTICAL] [Catpuccin] Mocha.css" stay in the Waybar menus)
-ln -sfn "$HOME/.config/waybar/configs/[TOP] Glass Islands" "$HOME/.config/waybar/config"
-ln -sfn "$HOME/.config/waybar/style/[Glass] Islands.css" "$HOME/.config/waybar/style.css"
+# Default Laptop layout with the adaptive style (colours from the wallpaper). Also in the Waybar menus:
+# "[0 VERTICAL] [Catpuccin] Mocha.css" (fixed colours) and the "[TOP] Glass Islands" layout + "[Glass] Islands.css".
+ln -sfn "$HOME/.config/waybar/configs/[TOP] Default Laptop" "$HOME/.config/waybar/config"
+ln -sfn "$HOME/.config/waybar/style/[0 VERTICAL] [Wallust] Adaptive.css" "$HOME/.config/waybar/style.css"
 
 # Scripts executable
 find "$HOME/.config/hypr" "$HOME/.config/fastfetch" -name '*.sh' -exec chmod +x {} +

@@ -4,7 +4,8 @@
 1. Makes the wallpaper's accent colours ($color12, $color13, $color14) readable on the dark UI: if one is too dark
    (contrast < 4.5:1 against #11111b), it is lightened in place in every wallust output, so the bar, lock screen,
    menus, notifications and window borders all get the readable version.
-2. Writes the accent for the apps wallust doesn't theme:
+2. Writes ~/.config/waybar/wallust/readable.css (colours 7-15, each made readable) for the adaptive Waybar style.
+3. Writes the accent for the apps wallust doesn't theme:
    ~/.config/gtk-theme/accent-gtk3.css, ~/.config/gtk-theme/accent.css (GTK4/libadwaita), ~/.config/kitty/accent.conf
    and tells running kitty windows to reload.
 Added 2026-10-28; undo with ~/.config/hypr/backup-desktop-2026-10-28/restore.sh
@@ -85,6 +86,16 @@ def main():
                 t = f.read_text()
                 f.write_text(pat.sub(lambda m: new if m.group(0).isupper() else new.lower(), t))
         print(f"color{n}: {old} -> {new} (was too dark)")
+
+    # readable copy of the whole bright half of the palette, for the multi-colour Waybar style
+    pal = {}
+    for n in range(7, 16):
+        m = re.search(rf"^\$color{n} = rgb\((\w{{6}})\)", HYPR.read_text(), re.M)
+        if m:
+            pal[n] = readable(m.group(1).upper())
+    (C / "waybar/wallust/readable.css").write_text(
+        "/* written by AccentGuard.py: wallust colours 7-15 lightened until readable on the dark bar — do not edit */\n"
+        + "".join(f"@define-color r{n} #{h};\n" for n, h in pal.items()))
 
     a = "#" + fixed[13]
     r, g, b = to_rgb(fixed[13])
