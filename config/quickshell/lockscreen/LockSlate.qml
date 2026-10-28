@@ -60,10 +60,16 @@ Item {
     // mouse parallax
     property real parX: 0
     property real parY: 0
+    // Qt resends hover events every frame while anything animates under a resting cursor, so only a real
+    // move (> 4 px since the last one) counts as activity — otherwise ambient mode would never start.
     HoverHandler {
+        property point last: Qt.point(-100, -100)
         onPointChanged: {
-            view.parX = (point.position.x / view.width - 0.5) * -30;
-            view.parY = (point.position.y / view.height - 0.5) * -18;
+            const p = point.position;
+            if (Math.abs(p.x - last.x) + Math.abs(p.y - last.y) < 4) return;
+            last = p;
+            view.parX = (p.x / view.width - 0.5) * -30;
+            view.parY = (p.y / view.height - 0.5) * -18;
             view.poke();
         }
     }
