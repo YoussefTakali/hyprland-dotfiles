@@ -2,6 +2,10 @@
 // The wallpaper stays whole and drifts slowly (Ken Burns). Everything else lives on one pane of dark glass on the
 // left: stacked clock (hours white, minutes accent) with a seconds hairline, date, weather + status, a music card
 // only while something plays, and the password pill. Unlock slides the glass away to the left.
+// Extras: ambient mode (after 20 s idle the pane slides away and a quiet clock stays; any key/mouse brings it back),
+// Caps Lock warning + layout hint after 3 wrong tries, a second page (scroll or ↓) with the month and the week's
+// weather, and a living wallpaper (mouse parallax; the pane's top light pulses with the music's bass).
+// Test hooks (preview only): QS_LOCK_IDLE=<s> idle delay, QS_LOCK_PAGE=1 start on the second page.
 import QtQuick
 import QtQuick.Effects
 import Quickshell
@@ -39,6 +43,40 @@ Item {
     Timer { interval: 250; running: true; onTriggered: view.ready = true }
     readonly property bool away: unlocking || !ready        // glass off screen
 
+    // ambient mode
+    property bool idle: false
+    readonly property int idleMs: parseInt(Quickshell.env("QS_LOCK_IDLE") || "20") * 1000
+    Timer {
+        id: idleTimer
+        interval: view.idleMs
+        running: !view.idle && input.text.length === 0 && !view.busy && !view.unlocking
+        onTriggered: { view.idle = true; view.page = 0; }
+    }
+    function poke() { if (view.idle) view.idle = false; idleTimer.restart(); }
+
+    // page 0 = clock, 1 = calendar + forecast
+    property int page: view.shell.preview ? (parseInt(Quickshell.env("QS_LOCK_PAGE") || "0") ? 1 : 0) : 0
+
+    // mouse parallax
+    property real parX: 0
+    property real parY: 0
+    HoverHandler {
+        onPointChanged: {
+            view.parX = (point.position.x / view.width - 0.5) * -30;
+            view.parY = (point.position.y / view.height - 0.5) * -18;
+            view.poke();
+        }
+    }
+
+    // Caps Lock (main keyboard)
+    property bool caps: false
+    Process {
+        id: capsProc
+        command: ["sh", "-c", "hyprctl devices -j | python3 -I -c 'import json,sys; k=[x for x in json.load(sys.stdin)[\"keyboards\"] if x.get(\"main\")]; print(1 if k and k[0].get(\"capsLock\") else 0)'"]
+        stdout: StdioCollector { onStreamFinished: view.caps = text.trim() === "1" }
+    }
+    Timer { interval: 700; running: !view.idle && !view.away; repeat: true; triggeredOnStart: true; onTriggered: capsProc.running = true }
+
     property date now: new Date()
     Timer { interval: 1000; running: true; repeat: true; triggeredOnStart: true; onTriggered: view.now = new Date() }
     Component.onCompleted: if (view.shell.preview) input.text = Quickshell.env("QS_LOCK_PREVIEW_TEXT") || ""
@@ -50,26 +88,30 @@ Item {
         clip: true
         Image {
             id: wall
-            anchors.fill: parent
+            width: parent.width; height: parent.height
+            x: view.unlocking ? 0 : view.parX
+            y: view.unlocking ? 0 : view.parY
+            Behavior on x { NumberAnimation { duration: 900; easing.type: Easing.OutCubic } }
+            Behavior on y { NumberAnimation { duration: 900; easing.type: Easing.OutCubic } }
             source: "file://" + Quickshell.env("HOME") + "/.config/hypr/wallpaper_effects/.wallpaper_current"
             fillMode: Image.PreserveAspectCrop
             transformOrigin: Item.Right
-            property real drift: 1.0
+            property real drift: 1.04          // ≥ 1.04 so the parallax shift never shows an edge
             scale: view.unlocking ? 1.0 : drift
             Behavior on scale { enabled: view.unlocking; NumberAnimation { duration: 650; easing.type: Easing.InOutCubic } }
             SequentialAnimation on drift {
                 running: !view.unlocking
                 loops: Animation.Infinite
-                NumberAnimation { from: 1.0; to: 1.07; duration: 38000; easing.type: Easing.InOutSine }
-                NumberAnimation { from: 1.07; to: 1.0; duration: 38000; easing.type: Easing.InOutSine }
+                NumberAnimation { from: 1.04; to: 1.10; duration: 38000; easing.type: Easing.InOutSine }
+                NumberAnimation { from: 1.10; to: 1.04; duration: 38000; easing.type: Easing.InOutSine }
             }
         }
     }
     // shade toward the glass so the edge never looks pasted on
     Rectangle {
         anchors.fill: parent
-        opacity: view.away ? 0 : 1
-        Behavior on opacity { NumberAnimation { duration: 650 } }
+        opacity: view.away || view.idle ? 0 : 1
+        Behavior on opacity { NumberAnimation { duration: 900 } }
         gradient: Gradient {
             orientation: Gradient.Horizontal
             GradientStop { position: 0.0; color: Qt.rgba(0, 0, 0, 0.45) }
@@ -85,8 +127,8 @@ Item {
         readonly property real m: 28
         y: m
         width: 580; height: view.height - 2 * m
-        x: view.away ? -width - 60 : m
-        Behavior on x { NumberAnimation { duration: view.unlocking ? 620 : 750; easing.type: view.unlocking ? Easing.InCubic : Easing.OutCubic } }
+        x: view.away || view.idle ? -width - 60 : m
+        Behavior on x { NumberAnimation { duration: view.unlocking ? 620 : (view.idle ? 1100 : 650); easing.type: view.unlocking || view.idle ? Easing.InOutCubic : Easing.OutCubic } }
         transform: Translate { x: view.shakeX }
 
         // shadow
@@ -114,8 +156,8 @@ Item {
             Rectangle {
                 anchors.fill: parent
                 gradient: Gradient {
-                    GradientStop { position: 0.0; color: Qt.rgba(view.accent.r, view.accent.g, view.accent.b, 0.20) }
-                    GradientStop { position: 0.45; color: "transparent" }
+                    GradientStop { position: 0.0; color: Qt.rgba(view.accent.r, view.accent.g, view.accent.b, Math.min(0.62, 0.20 + view.bass * 0.42)) }
+                    GradientStop { position: 0.30 + view.bass * 0.22; color: "transparent" }
                 }
             }
             Image { anchors.fill: parent; source: "grain.png"; fillMode: Image.Tile; opacity: 0.045 }
@@ -161,10 +203,32 @@ Item {
                 font { family: view.glyphs; pixelSize: 18 }
             }
 
+            // ── pages (scroll or ↑/↓) ──────────────────
+            Item {
+                id: pager
+                anchors.top: who.bottom; anchors.topMargin: 6
+                anchors.bottom: bottomStack.top; anchors.bottomMargin: 18
+                width: parent.width
+                clip: true
+                WheelHandler {
+                    acceptedDevices: PointerDevice.Mouse | PointerDevice.TouchPad
+                    onWheel: e => { if (e.angleDelta.y !== 0) view.page = e.angleDelta.y < 0 ? 1 : 0; view.poke(); }
+                }
+                Item {
+                    id: pages
+                    width: parent.width; height: parent.height * 2
+                    y: -view.page * pager.height
+                    Behavior on y { NumberAnimation { duration: 520; easing.type: Easing.OutCubic } }
+
+            Item {
+                id: page1
+                width: pager.width; height: pager.height
+                opacity: view.page === 0 ? 1 : 0.0
+                Behavior on opacity { NumberAnimation { duration: 400 } }
             // clock: numerals placed by their cap height (Montserrat digits ≈ 0.7 em), not by line boxes
             Item {
                 id: clockBox
-                anchors.top: who.bottom; anchors.topMargin: 40
+                anchors.top: parent.top; anchors.topMargin: 34
                 width: parent.width
                 readonly property real px: 196
                 readonly property real cap: px * 0.70
@@ -249,9 +313,160 @@ Item {
                     }
                 }
             }
+            }   // page1
+
+            // ── page 2: the month and the week's weather ──
+            Item {
+                id: page2
+                y: pager.height
+                width: pager.width; height: pager.height
+                opacity: view.page === 1 ? 1 : 0.0
+                Behavior on opacity { NumberAnimation { duration: 400 } }
+
+                Text {
+                    id: monthTitle
+                    y: 30
+                    text: Qt.formatDate(view.now, "MMMM yyyy")
+                    color: view.ink
+                    font { family: view.face; pixelSize: 26; weight: Font.DemiBold }
+                }
+                Grid {
+                    id: cal
+                    anchors.top: monthTitle.bottom; anchors.topMargin: 18
+                    columns: 7
+                    rowSpacing: 4
+                    readonly property real cw: page2.width / 7
+                    Repeater {
+                        model: ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]
+                        delegate: Text {
+                            required property string modelData
+                            width: cal.cw; height: 26
+                            horizontalAlignment: Text.AlignHCenter
+                            text: modelData
+                            color: view.faint
+                            font { family: view.face; pixelSize: 12; weight: Font.DemiBold }
+                        }
+                    }
+                    Repeater {
+                        model: view.calCells
+                        delegate: Item {
+                            required property var modelData
+                            width: cal.cw; height: 38
+                            Rectangle {
+                                anchors.centerIn: parent
+                                width: 34; height: 34; radius: 17
+                                color: view.accent
+                                visible: modelData.today === true
+                            }
+                            Text {
+                                anchors.centerIn: parent
+                                text: modelData.d || ""
+                                color: modelData.today ? "#11111b" : (modelData.past ? view.faint : (modelData.weekend ? view.muted : view.ink))
+                                font { family: view.face; pixelSize: 15; weight: modelData.today ? Font.Bold : Font.Medium }
+                            }
+                        }
+                    }
+                }
+
+                // the week's weather: day, sky, rain chance, low ── range ── high
+                Column {
+                    anchors.top: cal.bottom; anchors.topMargin: 30
+                    width: parent.width
+                    spacing: 10
+                    Repeater {
+                        model: view.forecast
+                        delegate: Item {
+                            id: fday
+                            required property var modelData
+                            width: parent.width; height: 26
+                            Text {
+                                width: 70
+                                anchors.verticalCenter: parent.verticalCenter
+                                text: fday.modelData.name
+                                color: view.ink
+                                font { family: view.face; pixelSize: 15; weight: Font.DemiBold }
+                            }
+                            Text {
+                                x: 74; width: 24
+                                anchors.verticalCenter: parent.verticalCenter
+                                horizontalAlignment: Text.AlignHCenter
+                                text: view.ic(fday.modelData.icon)
+                                color: view.accent
+                                font { family: view.glyphs; pixelSize: 17 }
+                            }
+                            Text {
+                                x: 108; width: 50
+                                anchors.verticalCenter: parent.verticalCenter
+                                text: fday.modelData.rain >= 20 ? fday.modelData.rain + "%" : ""
+                                color: "#89dceb"
+                                font { family: view.face; pixelSize: 13; weight: Font.DemiBold }
+                            }
+                            Text {
+                                id: lo
+                                x: 168; width: 40
+                                anchors.verticalCenter: parent.verticalCenter
+                                horizontalAlignment: Text.AlignRight
+                                text: Math.round(fday.modelData.lo) + "°"
+                                color: view.muted
+                                font { family: view.face; pixelSize: 15; weight: Font.Medium }
+                            }
+                            Item {
+                                id: range
+                                anchors.left: lo.right; anchors.leftMargin: 14
+                                anchors.right: hi.left; anchors.rightMargin: 14
+                                anchors.verticalCenter: parent.verticalCenter
+                                height: 6
+                                Rectangle { anchors.fill: parent; radius: 3; color: Qt.rgba(1, 1, 1, 0.1) }
+                                Rectangle {
+                                    readonly property real span: Math.max(1, view.fcMax - view.fcMin)
+                                    x: range.width * (fday.modelData.lo - view.fcMin) / span
+                                    width: Math.max(8, range.width * (fday.modelData.hi - fday.modelData.lo) / span)
+                                    height: parent.height; radius: 3
+                                    gradient: Gradient {
+                                        orientation: Gradient.Horizontal
+                                        GradientStop { position: 0.0; color: "#89b4fa" }
+                                        GradientStop { position: 1.0; color: view.accent }
+                                    }
+                                }
+                            }
+                            Text {
+                                id: hi
+                                anchors.right: parent.right
+                                width: 40
+                                anchors.verticalCenter: parent.verticalCenter
+                                horizontalAlignment: Text.AlignRight
+                                text: Math.round(fday.modelData.hi) + "°"
+                                color: view.ink
+                                font { family: view.face; pixelSize: 15; weight: Font.DemiBold }
+                            }
+                        }
+                    }
+                }
+            }
+                }   // pages
+            }   // pager
+
+            // page dots
+            Column {
+                anchors.right: parent.right; anchors.rightMargin: -26
+                anchors.verticalCenter: pager.verticalCenter
+                spacing: 8
+                Repeater {
+                    model: 2
+                    delegate: Rectangle {
+                        required property int index
+                        width: 6; radius: 3
+                        height: view.page === index ? 20 : 6
+                        color: view.page === index ? view.accent : Qt.rgba(1, 1, 1, 0.3)
+                        Behavior on height { NumberAnimation { duration: 250; easing.type: Easing.OutCubic } }
+                        MouseArea { anchors.fill: parent; anchors.margins: -6; cursorShape: Qt.PointingHandCursor; onClicked: view.page = index }
+                    }
+                }
+            }
 
             // ── bottom stack: music, password, power ──
             Column {
+                id: bottomStack
                 anchors.left: parent.left; anchors.right: parent.right
                 anchors.bottom: parent.bottom
                 spacing: 18
@@ -373,6 +588,25 @@ Item {
                     QtObject { id: wave; property real t: 0 }
                     NumberAnimation { target: wave; property: "t"; running: view.busy; from: 0; to: Math.PI * 4; duration: 1500; loops: Animation.Infinite }
 
+                    // Caps Lock warning
+                    Rectangle {
+                        anchors.right: go.left; anchors.rightMargin: 10
+                        anchors.verticalCenter: parent.verticalCenter
+                        width: capsRow.width + 20; height: 28; radius: 14
+                        color: Qt.rgba(0.976, 0.886, 0.686, 0.16)
+                        opacity: view.caps ? 1 : 0
+                        scale: view.caps ? 1 : 0.8
+                        visible: opacity > 0
+                        Behavior on opacity { NumberAnimation { duration: 180 } }
+                        Behavior on scale { NumberAnimation { duration: 220; easing.type: Easing.OutBack } }
+                        Row {
+                            id: capsRow
+                            anchors.centerIn: parent
+                            spacing: 6
+                            Text { anchors.verticalCenter: parent.verticalCenter; text: view.ic(0xf0632); color: "#f9e2af"; font { family: view.glyphs; pixelSize: 14 } }
+                            Text { anchors.verticalCenter: parent.verticalCenter; text: "Caps Lock is on"; color: "#f9e2af"; font { family: view.face; pixelSize: 12; weight: Font.Bold } }
+                        }
+                    }
                     // submit
                     Rectangle {
                         id: go
@@ -404,7 +638,9 @@ Item {
                     width: parent.width; height: 18
                     Text {
                         x: 24
-                        text: view.failed ? view.shell.failText : ""
+                        text: !view.failed ? ""
+                            : view.shell.attempts >= 3 ? "Still wrong. Check Caps Lock and the " + (layoutName.text || "keyboard") + " layout."
+                            : view.shell.failText
                         color: view.danger
                         font { family: view.face; pixelSize: 13; weight: Font.DemiBold }
                     }
@@ -468,8 +704,11 @@ Item {
         focus: true
         enabled: !view.busy && !view.unlocking
         onAccepted: view.shell.tryUnlock(text)
-        Keys.onEscapePressed: text = ""
-        onTextChanged: if (text.length) view.shell.failText = ""
+        Keys.onEscapePressed: { text = ""; view.page = 0; }
+        Keys.onDownPressed: view.page = 1
+        Keys.onUpPressed: view.page = 0
+        Keys.onPressed: event => { view.poke(); event.accepted = false; }
+        onTextChanged: { view.poke(); if (text.length) { view.shell.failText = ""; view.page = 0; } }
     }
     Timer { interval: 300; running: true; repeat: true; onTriggered: if (!input.activeFocus) input.forceActiveFocus() }
     Text {
@@ -538,6 +777,135 @@ Item {
                    text: view.notifCount === 0 ? "No notifications" : view.notifCount === 1 ? "1 notification" : view.notifCount + " notifications" });
         if (view.micMuted) out.push({ icon: view.ic(0xf036d), text: "Microphone muted" });
         return out;
+    }
+
+    // ── Bass level for the pulsing light (cava, 6 mono bars) ─
+    property real bass: 0
+    Behavior on bass { NumberAnimation { duration: 90; easing.type: Easing.OutQuad } }
+    Process {
+        running: view.playing && !view.idle && !view.away
+        command: ["sh", "-c",
+            "f=${XDG_RUNTIME_DIR:-/tmp}/qslock-bass.conf; " +
+            "printf '[general]\\nframerate = 40\\nbars = 6\\n[input]\\nmethod = pulse\\nsource = auto\\n" +
+            "[output]\\nmethod = raw\\nchannels = mono\\nraw_target = /dev/stdout\\ndata_format = ascii\\nascii_max_range = 100\\n' > \"$f\"; exec cava -p \"$f\""]
+        stdout: SplitParser {
+            onRead: data => { const v = data.split(";").filter(x => x.length).map(Number); view.bass = v.length ? Math.min(1, (v[0] + v[1]) / 200) : 0; }
+        }
+        onRunningChanged: if (!running) view.bass = 0
+    }
+
+    // ── Calendar ──────────────────────────────────────
+    readonly property var calCells: {
+        const n = view.now, y = n.getFullYear(), m = n.getMonth(), today = n.getDate();
+        const first = (new Date(y, m, 1).getDay() + 6) % 7;        // Monday first
+        const days = new Date(y, m + 1, 0).getDate();
+        const out = [];
+        for (let i = 0; i < first; i++) out.push({ d: 0 });
+        for (let d = 1; d <= days; d++) {
+            const wd = (first + d - 1) % 7;
+            out.push({ d: d, today: d === today, past: d < today, weekend: wd >= 5 });
+        }
+        return out;
+    }
+
+    // ── Forecast (Open-Meteo cache written by the Waybar weather module) ─
+    property var forecast: []
+    property real fcMin: 0
+    property real fcMax: 1
+    Process {
+        id: fcProc
+        running: true
+        command: ["cat", Quickshell.env("HOME") + "/.cache/open_meteo_cache.json"]
+        stdout: StdioCollector {
+            onStreamFinished: {
+                try {
+                    const f = JSON.parse(text).forecast, d = f.daily, h = f.hourly;
+                    const todayKey = Qt.formatDate(new Date(), "yyyy-MM-dd");
+                    const out = [];
+                    for (let i = 0; i < d.time.length && out.length < 6; i++) {
+                        if (d.time[i] < todayKey) continue;
+                        let rain = 0;
+                        for (let j = 0; j < h.time.length; j++)
+                            if (h.time[j].startsWith(d.time[i])) rain = Math.max(rain, h.precipitation_probability[j] || 0);
+                        const date = new Date(d.time[i] + "T12:00:00");
+                        out.push({ name: d.time[i] === todayKey ? "Today" : Qt.formatDate(date, "ddd"),
+                                   lo: d.temperature_2m_min[i], hi: d.temperature_2m_max[i], rain: rain,
+                                   icon: rain >= 70 ? 0xf0596 : rain >= 45 ? 0xf0597 : rain >= 20 ? 0xf0595 : 0xf0599 });
+                    }
+                    view.fcMin = Math.min(...out.map(o => o.lo));
+                    view.fcMax = Math.max(...out.map(o => o.hi));
+                    view.forecast = out;
+                } catch (e) { view.forecast = []; }
+            }
+        }
+    }
+
+    // ── Ambient clock (shown while idle) ──────────────
+    Rectangle {       // soft shade under the corner clock, so it reads on bright wallpapers too
+        anchors.left: parent.left; anchors.right: parent.right; anchors.bottom: parent.bottom
+        height: parent.height * 0.5
+        opacity: ambient.opacity
+        gradient: Gradient {
+            GradientStop { position: 0.0; color: "transparent" }
+            GradientStop { position: 1.0; color: Qt.rgba(0, 0, 0, 0.5) }
+        }
+    }
+    Item {
+        id: ambient
+        anchors.left: parent.left; anchors.leftMargin: 80
+        anchors.bottom: parent.bottom; anchors.bottomMargin: 76
+        width: 700; height: ambCol.height
+        opacity: view.idle && !view.away ? 1 : 0
+        visible: opacity > 0
+        Behavior on opacity { NumberAnimation { duration: view.idle ? 1400 : 300; easing.type: Easing.InOutQuad } }
+        transform: Translate { y: view.idle ? 0 : 24; Behavior on y { NumberAnimation { duration: 1400; easing.type: Easing.OutCubic } } }
+        layer.enabled: true
+        layer.effect: MultiEffect { shadowEnabled: true; shadowColor: "black"; shadowOpacity: 0.6; shadowBlur: 0.8 }
+        Column {
+            id: ambCol
+            spacing: 6
+            Row {
+                spacing: 14
+                Text {
+                    text: Qt.formatTime(view.now, "hh:mm AP").split(" ")[0]
+                    color: "white"
+                    font { family: view.face; pixelSize: 150; weight: Font.ExtraLight; letterSpacing: -2 }
+                }
+                Text {
+                    anchors.baseline: parent.children[0].baseline
+                    text: Qt.formatTime(view.now, "AP")
+                    color: Qt.rgba(1, 1, 1, 0.75)
+                    font { family: view.face; pixelSize: 24; weight: Font.DemiBold }
+                }
+            }
+            Row {
+                spacing: 18
+                Text {
+                    text: Qt.formatDate(view.now, "dddd, d MMMM")
+                    color: "white"
+                    font { family: view.face; pixelSize: 22; weight: Font.Medium }
+                }
+                Text {
+                    text: view.weather.temp
+                    color: Qt.rgba(1, 1, 1, 0.75)
+                    font { family: view.face; pixelSize: 22; weight: Font.Medium }
+                }
+                Text {
+                    visible: view.notifCount > 0
+                    text: view.ic(0xf009e) + " " + view.notifCount
+                    color: view.accent
+                    font { family: view.glyphs; pixelSize: 20 }
+                }
+            }
+        }
+    }
+    Text {
+        anchors.horizontalCenter: parent.horizontalCenter
+        anchors.bottom: parent.bottom; anchors.bottomMargin: 30
+        text: "Press any key to unlock"
+        color: Qt.rgba(1, 1, 1, 0.55)
+        opacity: ambient.opacity
+        font { family: view.face; pixelSize: 13; weight: Font.Medium }
     }
 
     // ── Power (two clicks within 3 s) ─────────────────
