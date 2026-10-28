@@ -1,6 +1,7 @@
 // Lock screen (Quickshell) — replaces hyprlock, same page: clock, password, music card, power, info.
 // Run:      qs -c lockscreen                      (locks the session; started by ~/.config/hypr/scripts/QsLock.sh)
 // Preview:  QS_LOCK_PREVIEW=8 qs -c lockscreen     (shows the page as an overlay for 8 s, never locks/authenticates)
+//           test hooks: QS_LOCK_PREVIEW_TEXT=abc (pre-typed), QS_LOCK_PREVIEW_FAIL=N, QS_LOCK_PREVIEW_UNLOCK=N (seconds)
 //
 // Security: the session is locked through ext-session-lock (WlSessionLock). If this process dies while locked,
 // Hyprland keeps the screen locked; QsLock.sh then falls back to hyprlock. Unlock happens only on PAM success.
@@ -52,20 +53,20 @@ ShellRoot {
                 unlockTimer.start();
             } else {
                 root.attempts += 1;
-                root.failText = "Wrong password · attempt " + root.attempts;
+                root.failText = root.attempts > 1 ? "Wrong password, try again (" + root.attempts + " attempts)" : "Wrong password, try again";
                 root.failed();
             }
         }
         onError: error => {
             root.busy = false;
-            root.failText = "Authentication error";
+            root.failText = "Couldn't check the password. Try again.";
             root.failed();
         }
     }
 
     Timer {
         id: unlockTimer
-        interval: 700                       // let the success animation play, then really unlock
+        interval: 760                       // let the iris finish opening, then really unlock
         onTriggered: { lock.locked = false; Qt.callLater(Qt.quit); }
     }
 
@@ -109,6 +110,12 @@ ShellRoot {
                 interval: parseInt(Quickshell.env("QS_LOCK_PREVIEW_UNLOCK") || "0") * 1000
                 running: interval > 0
                 onTriggered: root.unlocking = true
+            }
+            // QS_LOCK_PREVIEW_FAIL=N plays the wrong-password animation after N s (for testing)
+            Timer {
+                interval: parseInt(Quickshell.env("QS_LOCK_PREVIEW_FAIL") || "0") * 1000
+                running: interval > 0
+                onTriggered: { root.attempts += 1; root.failText = "Wrong password, try again"; root.failed(); }
             }
         }
     }

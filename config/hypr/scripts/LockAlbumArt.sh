@@ -24,7 +24,7 @@ if [[ ! -s "$OUT" ]]; then
         curl -sfL --max-time 5 "$URL" -o "$TMP"
     fi
     # Convert to real PNG (hyprlock rejects JPEGs named .png) and square-crop
-    magick "$TMP" -resize 256x256^ -gravity center -extent 256x256 "$OUT" 2>/dev/null
+    magick "$TMP" -resize 512x512^ -gravity center -extent 512x512 "$OUT" 2>/dev/null
     rm -f "$TMP"
 fi
 
