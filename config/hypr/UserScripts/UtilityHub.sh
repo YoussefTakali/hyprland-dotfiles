@@ -22,6 +22,7 @@ items=(
     "󰓅|Power profile|tuned|$U/PowerProfile.sh"
     "󰖨|Night light|Super+N|$S/Hyprsunset.sh toggle"
     "󰗊|Text grab (OCR)|Super+Alt+T|$U/OcrGrab.sh"
+    "󰌾|Lock screen style|4 styles|$U/LockStyle.sh"
     "󰌌|Keybinds|Super+H|$S/KeyHints.sh"
 )
 

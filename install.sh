@@ -39,7 +39,7 @@ sudo dnf install -y \
     quickshell mpvpaper ffmpeg qt6-qtmultimedia qt6-qt5compat qt6-qtsvg \
     cava wf-recorder tesseract tesseract-langpack-eng hyprpicker cliphist grim slurp swappy wl-clipboard \
     ImageMagick fastfetch lsd fzf kitty playerctl blueman nautilus thunar \
-    python3-gobject jq tuned-ppd libnotify
+    python3-gobject jq tuned-ppd libnotify julietaula-montserrat-fonts
 
 # 3. Back up what we replace, then copy configs
 STAMP=$(date +%Y%m%d-%H%M%S)

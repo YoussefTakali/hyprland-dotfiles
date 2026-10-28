@@ -1,4 +1,4 @@
-// Lock screen (Quickshell) — replaces hyprlock, same page: clock, password, music card, power, info.
+// Lock screen (Quickshell) — replaces hyprlock. The page itself comes from a style file (Lock<Style>.qml).
 // Run:      qs -c lockscreen                      (locks the session; started by ~/.config/hypr/scripts/QsLock.sh)
 // Preview:  QS_LOCK_PREVIEW=8 qs -c lockscreen     (shows the page as an overlay for 8 s, never locks/authenticates)
 //           test hooks: QS_LOCK_PREVIEW_TEXT=abc (pre-typed), QS_LOCK_PREVIEW_FAIL=N, QS_LOCK_PREVIEW_UNLOCK=N (seconds)
@@ -15,6 +15,48 @@ ShellRoot {
     id: root
     // Never hot-reload while locked: a reload destroys the active lock (QsLock.sh also runs a frozen copy)
     settings.watchFiles: false
+
+    // ── Style: Lock<Name>.qml, chosen in ./style (LockStyle.sh writes it), QS_LOCK_STYLE overrides ──
+    readonly property var styles: ["Slate", "Iris", "Fog", "Cards"]
+    FileView { id: styleFile; path: Quickshell.shellDir + "/style"; blockLoading: true; printErrors: false }
+    readonly property string style: {
+        const want = (Quickshell.env("QS_LOCK_STYLE") || styleFile.text() || "").trim();
+        return styles.indexOf(want) >= 0 ? want : styles[0];
+    }
+    component StylePage: Loader {
+        Component.onCompleted: setSource("Lock" + root.style + ".qml", { shell: root })
+        // a broken style must never leave an empty lock: fall back to the default one
+        onStatusChanged: {
+            if (status !== Loader.Error) return;
+            if (source.toString().indexOf("Lock" + root.styles[0]) < 0) setSource("Lock" + root.styles[0] + ".qml", { shell: root });
+            else sourceComponent = plainPage;      // even the default failed: plain password page, never a dead lock
+        }
+    }
+    Component {
+        id: plainPage
+        Rectangle {
+            color: "#11111b"
+            Column {
+                anchors.centerIn: parent
+                spacing: 16
+                Text { anchors.horizontalCenter: parent.horizontalCenter; color: "white"; font.pixelSize: 22
+                       text: root.failText !== "" ? root.failText : "Type your password and press Enter" }
+                Rectangle {
+                    anchors.horizontalCenter: parent.horizontalCenter
+                    width: 320; height: 48; radius: 24; color: "#313244"
+                    TextInput {
+                        id: plainInput
+                        anchors.fill: parent; anchors.margins: 12
+                        horizontalAlignment: TextInput.AlignHCenter
+                        echoMode: TextInput.Password; color: "white"; font.pixelSize: 18
+                        focus: true
+                        onAccepted: { root.tryUnlock(text); text = ""; }
+                    }
+                }
+            }
+            Timer { interval: 300; running: true; repeat: true; onTriggered: if (!plainInput.activeFocus) plainInput.forceActiveFocus() }
+        }
+    }
 
     readonly property int previewSeconds: parseInt(Quickshell.env("QS_LOCK_PREVIEW") || "0")
     readonly property bool preview: previewSeconds > 0
@@ -79,7 +121,7 @@ ShellRoot {
 
         WlSessionLockSurface {
             color: "black"
-            LockView { anchors.fill: parent; shell: root }
+            StylePage { anchors.fill: parent }
         }
     }
 
@@ -103,7 +145,7 @@ ShellRoot {
             WlrLayershell.namespace: "qs-lock-preview"
             WlrLayershell.keyboardFocus: WlrKeyboardFocus.None
             color: "black"
-            LockView { anchors.fill: parent; shell: root }
+            StylePage { anchors.fill: parent }
             Timer { interval: root.previewSeconds * 1000; running: true; onTriggered: Qt.quit() }
             // QS_LOCK_PREVIEW_UNLOCK=N plays the success animation after N s (for testing)
             Timer {
