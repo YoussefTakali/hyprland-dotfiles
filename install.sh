@@ -39,7 +39,7 @@ sudo dnf install -y \
     quickshell mpvpaper ffmpeg qt6-qtmultimedia qt6-qt5compat qt6-qtsvg \
     cava wf-recorder tesseract tesseract-langpack-eng hyprpicker cliphist grim slurp swappy wl-clipboard \
     ImageMagick fastfetch lsd fzf kitty playerctl blueman nautilus thunar \
-    python3-gobject jq tuned-ppd libnotify julietaula-montserrat-fonts
+    python3-gobject jq tuned-ppd libnotify julietaula-montserrat-fonts nautilus-python
 
 # 3. Back up what we replace, then copy configs
 STAMP=$(date +%Y%m%d-%H%M%S)
@@ -78,6 +78,10 @@ ln -sfn "$HOME/.config/waybar/style/[0 VERTICAL] [Wallust] Adaptive.css" "$HOME/
 # Scripts executable
 find "$HOME/.config/hypr" "$HOME/.config/fastfetch" -name '*.sh' -exec chmod +x {} +
 chmod +x "$HOME/.config/hypr/UserScripts/"*.py "$HOME/.config/hypr/scripts/"*.py 2>/dev/null || true
+
+# Nautilus right-click "Open in Kitty" (its own "Open in Console" is hard-wired to Ptyxis)
+mkdir -p "$HOME/.local/share/nautilus-python/extensions"
+cp "$HERE/home/nautilus-python/open-in-kitty.py" "$HOME/.local/share/nautilus-python/extensions/"
 
 # 4. Prompt theme (oh-my-zsh is installed by the KooL base)
 if [[ -d "$HOME/.oh-my-zsh" ]]; then
