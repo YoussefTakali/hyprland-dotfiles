@@ -93,6 +93,9 @@ if [[ -n "$KB" && "$KB" != "n/a" && -f "$SYS" ]]; then
     echo "Keyboard layout: $KB${KBV:+ ($KBV)}"
 fi
 
+# Graphics: Hyprland settings for this PC's GPUs (hybrid laptops keep the discrete GPU asleep until needed)
+"$HOME/.config/hypr/scripts/GpuConfig.sh" || true
+
 # NVIDIA-only environment variables break GL/VA-API on machines without an NVIDIA GPU
 if ! lspci 2>/dev/null | grep -qiE "vga.*nvidia|3d.*nvidia"; then
     sed -i -E 's/^(\s*env\s*=\s*(LIBVA_DRIVER_NAME|__GLX_VENDOR_LIBRARY_NAME),nvidia)/# (no NVIDIA GPU) \1/' \

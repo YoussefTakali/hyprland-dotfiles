@@ -1,0 +1,15 @@
+#!/usr/bin/env bash
+# gpu-run <app> [args]: start an app on the powerful (discrete) GPU of a hybrid laptop.
+# Everything else runs on the integrated GPU so the discrete one can sleep and save battery.
+[[ $# -gt 0 ]] || { echo "usage: gpu-run <app> [args]"; exit 1; }
+eval "$("$HOME/.config/hypr/scripts/GpuInfo.sh")"
+case "$DGPU" in
+    nvidia)
+        export __NV_PRIME_RENDER_OFFLOAD=1 __NV_PRIME_RENDER_OFFLOAD_PROVIDER=NVIDIA-G0 \
+               __GLX_VENDOR_LIBRARY_NAME=nvidia __VK_LAYER_NV_optimus=NVIDIA_only \
+               __EGL_VENDOR_LIBRARY_FILENAMES=/usr/share/glvnd/egl_vendor.d/10_nvidia.json \
+               LIBVA_DRIVER_NAME=nvidia ;;
+    amd)
+        export DRI_PRIME=1 ;;
+esac
+exec "$@"

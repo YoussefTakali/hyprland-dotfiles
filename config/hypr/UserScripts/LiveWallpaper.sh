@@ -10,8 +10,14 @@ SCRIPTS="$HOME/.config/hypr/scripts"
 
 play() {
     pkill -x mpvpaper 2>/dev/null
+    # Decode on the GPU that drives the screen (on a hybrid laptop the integrated one, so the discrete GPU can sleep)
+    eval "$("$HOME/.config/hypr/scripts/GpuInfo.sh")"
+    local g=${DISPLAY_GPU^^} hw="hwdec=auto-safe"
+    local render_var="${g}_RENDER" va_var="${g}_VA"
+    [[ -n "${!render_var:-}" ]] && hw="hwdec=vaapi vaapi-device=${!render_var}"
     # -p: pause while the wallpaper is fully covered (fullscreen apps) to save battery
-    setsid -f mpvpaper -p -o "no-audio loop-file=inf hwdec=auto panscan=1.0 load-scripts=no" '*' "$1" >/dev/null 2>&1 </dev/null
+    LIBVA_DRIVER_NAME=${!va_var:-$LIBVA_DRIVER_NAME} \
+        setsid -f mpvpaper -p -o "no-audio loop-file=inf $hw panscan=1.0 load-scripts=no" '*' "$1" >/dev/null 2>&1 </dev/null
 }
 
 frame_of() {   # a frame ~10% into the video, cached per video
