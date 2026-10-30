@@ -3,8 +3,8 @@
 #
 #   ./install.sh            base (KooL Fedora-Hyprland, if Hyprland isn't installed yet) + extras + these configs
 #   ./install.sh --no-base  skip the KooL base install (Hyprland already set up)
-#   ./install.sh --sddm     also install the Jake (sddm-astronaut) login theme + the SDDM login fix
-#                           (French keyboard + visible cursor) — asks for sudo
+#   ./install.sh --sddm     also switch the login screen to SDDM with the Jake (sddm-astronaut) theme
+#                           + the SDDM login fix (your keyboard layout + visible cursor); replaces GNOME's GDM
 #
 # Everything this replaces is copied to ~/.config-backup-<date>/ first.
 set -euo pipefail
@@ -21,27 +21,46 @@ for a in "$@"; do
 done
 
 say() { printf '\n\033[1;35m==> %s\033[0m\n' "$*"; }
+STEP="start"
+# Say clearly where it stopped (otherwise a failed step can look like a finished install)
+trap 'printf "\n\033[1;31m✗ Install stopped during: %s\033[0m\nNothing after this step was done. Fix the error above and run ./install.sh again (it is safe to re-run).\n" "$STEP" >&2' ERR
 
 grep -qi fedora /etc/os-release || { echo "This setup targets Fedora."; exit 1; }
 
 # 1. Base: JaKooLit's Fedora-Hyprland (Hyprland, Waybar, rofi, swaync, wallust, SDDM, themes, fonts…)
 if (( BASE )) && ! command -v Hyprland >/dev/null; then
+    STEP="KooL base install"
     say "Installing the KooL Fedora-Hyprland base (interactive)"
+    echo "KooL asks a few questions; the options this desktop needs are already ticked, just press Enter."
     [[ -d "$HOME/Fedora-Hyprland" ]] || git clone --depth=1 https://github.com/JaKooLit/Fedora-Hyprland.git "$HOME/Fedora-Hyprland"
-    (cd "$HOME/Fedora-Hyprland" && ./install.sh)
+    # KooL offers to reboot when it finishes; that would stop this script half way, so postpone it
+    SHIM=$(mktemp -d)
+    cat > "$SHIM/systemctl" <<'SHIMEOF'
+#!/usr/bin/env bash
+if [[ "${1:-}" == reboot ]]; then echo "(Reboot postponed: the rest of the desktop is installed first.)"; exit 0; fi
+exec /usr/bin/systemctl "$@"
+SHIMEOF
+    chmod +x "$SHIM/systemctl"
+    # Pre-tick the options this desktop needs in KooL's checklist (its --preset no longer pre-selects them)
+    sed -i -E 's/^([[:space:]]*"(input_group|gtk_themes|bluetooth|thunar|quickshell|xdph|zsh|dots)" .*)"OFF"$/\1"ON"/' \
+        "$HOME/Fedora-Hyprland/install.sh"
+    (cd "$HOME/Fedora-Hyprland" && PATH="$SHIM:$PATH" ./install.sh)
+    rm -rf "$SHIM"
 fi
 
 # 2. Extra packages used by these configs
+STEP="installing extra packages"
 say "Installing extra packages"
 sudo dnf copr enable -y errornointernet/quickshell
 sudo dnf copr enable -y sdegler/hyprland        # mpvpaper (video wallpapers)
-sudo dnf install -y \
-    quickshell mpvpaper ffmpeg qt6-qtmultimedia qt6-qt5compat qt6-qtsvg \
+sudo dnf install -y --skip-unavailable \
+    quickshell mpvpaper /usr/bin/ffmpeg qt6-qtmultimedia qt6-qt5compat qt6-qtsvg \
     cava wf-recorder tesseract tesseract-langpack-eng hyprpicker cliphist grim slurp swappy wl-clipboard \
     ImageMagick fastfetch lsd fzf kitty playerctl blueman nautilus thunar \
     python3-gobject jq tuned-ppd libnotify julietaula-montserrat-fonts nautilus-python
 
 # 3. Back up what we replace, then copy configs
+STEP="copying configs"
 STAMP=$(date +%Y%m%d-%H%M%S)
 BACKUP="$HOME/.config-backup-$STAMP"
 say "Backing up current configs to $BACKUP"
@@ -133,6 +152,7 @@ done
 
 # 8. Optional: SDDM login screen fix
 if (( SDDM )); then
+    STEP="SDDM login screen"
     say "Installing the Jake login theme (sddm-astronaut-theme)"
     sudo dnf install -y sddm qt6-qtsvg qt6-qtvirtualkeyboard qt6-qtmultimedia
     T=/usr/share/sddm/themes/sddm-astronaut-theme
@@ -144,6 +164,11 @@ if (( SDDM )); then
     printf '[Theme]\nCurrent=sddm-astronaut-theme\n' | sudo tee /etc/sddm.conf.d/10-theme.conf >/dev/null
     say "Applying the SDDM login fix"
     sudo bash "$HOME/.config/hypr/UserScripts/sddm-login-fix.sh"
+    # Fedora Workstation uses GNOME's login screen (GDM); only one can run
+    if systemctl is-enabled gdm >/dev/null 2>&1; then
+        sudo systemctl disable gdm
+    fi
+    sudo systemctl enable sddm
 fi
 
 say "Done"

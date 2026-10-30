@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# SDDM login screen fixes (run once with sudo): visible mouse cursor + French AZERTY keyboard.
+# SDDM login screen fixes (run once with sudo): visible mouse cursor + your keyboard layout.
 #
 # v2: runs the login screen (greeter) on X11 instead of Weston. Weston's cursor stayed invisible on this
 # laptop; X11 draws the cursor itself and already uses the localectl layout (fr / azerty).
@@ -22,13 +22,16 @@ if [[ -d "$USER_HOME/.icons/$CURSOR" && ! -d "/usr/share/icons/$CURSOR" ]]; then
     chmod -R a+rX "/usr/share/icons/$CURSOR"
 fi
 
-# 3. Keyboard layout for X11 (same as the console / desktop)
-localectl set-x11-keymap fr pc105 azerty
+# 3. Keyboard layout for X11: keep the system's; if none is set yet, use the console keymap (e.g. fr, de, us)
+if ! localectl status | grep -q "X11 Layout"; then
+    vc=$(localectl status | awk -F': ' '/VC Keymap/ {print $2}' | cut -d- -f1)
+    [[ -n "$vc" && "$vc" != "n/a" ]] && localectl set-x11-keymap "$vc" || true
+fi
 
 # 4. SDDM: X11 greeter with the Bibata cursor (keeps your theme — Jake / sddm-astronaut)
 [[ -f /etc/sddm.conf.d/20-login-fix.conf ]] && cp -a /etc/sddm.conf.d/20-login-fix.conf /etc/sddm.conf.d/20-login-fix.conf.weston.bak
 cat > /etc/sddm.conf.d/20-login-fix.conf <<EOF
-# Written by sddm-login-fix.sh v2 — X11 login screen: visible cursor + French keyboard
+# Written by sddm-login-fix.sh v2 — X11 login screen: visible cursor + system keyboard layout
 [General]
 DisplayServer=x11
 
