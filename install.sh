@@ -82,6 +82,17 @@ grep -rlI "/home/rhast" "$HOME/.config/"{hypr,waybar,rofi,kitty,quickshell,fastf
 sed -i "s|hello, rhast|hello, $USER|" "$HOME/.config/fastfetch/config-wall.jsonc"
 sed -i "s|\${SUDO_USER:-rhast}|\${SUDO_USER:-$USER}|" "$HOME/.config/hypr/UserScripts/sddm-login-fix.sh"
 
+# Keyboard: keep this PC's layout (the repo carries the original author's French AZERTY)
+SYS="$HOME/.config/hypr/configs/SystemSettings.conf"
+KB=$(grep -m1 -oP '^\s*kb_layout\s*=\s*\K\S+' "$BACKUP/hypr/configs/SystemSettings.conf" 2>/dev/null || true)
+KBV=$(grep -m1 -oP '^\s*kb_variant\s*=\s*\K\S+' "$BACKUP/hypr/configs/SystemSettings.conf" 2>/dev/null || true)
+[[ -z "$KB" ]] && KB=$(localectl status 2>/dev/null | awk -F': *' '/X11 Layout/ {print $2}')
+[[ -z "$KB" ]] && KB=$(localectl status 2>/dev/null | awk -F': *' '/VC Keymap/ {print $2}' | cut -d- -f1)
+if [[ -n "$KB" && "$KB" != "n/a" && -f "$SYS" ]]; then
+    sed -i -E "s/^([[:space:]]*kb_layout[[:space:]]*=).*/\1 $KB/; s/^([[:space:]]*kb_variant[[:space:]]*=).*/\1 $KBV/" "$SYS"
+    echo "Keyboard layout: $KB${KBV:+ ($KBV)}"
+fi
+
 # NVIDIA-only environment variables break GL/VA-API on machines without an NVIDIA GPU
 if ! lspci 2>/dev/null | grep -qiE "vga.*nvidia|3d.*nvidia"; then
     sed -i -E 's/^(\s*env\s*=\s*(LIBVA_DRIVER_NAME|__GLX_VENDOR_LIBRARY_NAME),nvidia)/# (no NVIDIA GPU) \1/' \
@@ -97,6 +108,7 @@ ln -sfn "$HOME/.config/waybar/style/[0 VERTICAL] [Wallust] Adaptive.css" "$HOME/
 # Scripts executable
 find "$HOME/.config/hypr" "$HOME/.config/fastfetch" -name '*.sh' -exec chmod +x {} +
 chmod +x "$HOME/.config/hypr/UserScripts/"*.py "$HOME/.config/hypr/scripts/"*.py 2>/dev/null || true
+chmod +x "$HOME/.config/hypr/bin/"* 2>/dev/null || true      # hyprctl stand-in + config watcher (Lua mode)
 
 # Nautilus right-click "Open in Kitty" (its own "Open in Console" is hard-wired to Ptyxis)
 mkdir -p "$HOME/.local/share/nautilus-python/extensions"

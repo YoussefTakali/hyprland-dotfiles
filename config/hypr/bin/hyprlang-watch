@@ -1,0 +1,19 @@
+#!/usr/bin/env bash
+# Reload Hyprland when one of the .conf files loaded by lua/hyprlang.lua is saved.
+# (A classic .conf session reloads by itself on any sourced file; Lua mode only watches .lua files.)
+# Started once per session by hyprlang.lua; exits with the session. Checks file times every 1.5 s.
+LIST="$HOME/.cache/hyprlang-files.txt"
+exec 9>"${XDG_RUNTIME_DIR:-/tmp}/hyprlang-watch.lock"
+flock -n 9 || exit 0                                   # one watcher per session
+SOCK="${XDG_RUNTIME_DIR}/hypr/${HYPRLAND_INSTANCE_SIGNATURE}/.socket.sock"
+stamp() { [[ -f "$LIST" ]] && xargs -d '\n' -r stat -c '%Y %s' < "$LIST" 2>/dev/null | md5sum; }
+last=$(stamp)
+while [[ -z "$HYPRLAND_INSTANCE_SIGNATURE" || -S "$SOCK" ]]; do
+    sleep 1.5
+    now=$(stamp)
+    if [[ "$now" != "$last" ]]; then
+        sleep 0.4                                      # let the editor/script finish writing
+        /usr/bin/hyprctl reload >/dev/null 2>&1
+        last=$(stamp)
+    fi
+done

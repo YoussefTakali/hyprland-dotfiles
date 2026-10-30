@@ -1,0 +1,53 @@
+#!/usr/bin/env bash
+# hyprctl stand-in for Hyprland's Lua config (0.57+ has no "keyword", and "dispatch" expects Lua).
+# Old-style calls from scripts are translated through ~/.config/hypr/lua/hyprlang.lua:
+#   hyprctl keyword general:gaps_in 8        ->  hyprctl eval 'hyprlang.keyword(...)'
+#   hyprctl dispatch workspace 2             ->  hyprctl eval 'hyprlang.dispatch(...)'
+#   hyprctl --batch "keyword …; dispatch …"  ->  each part translated
+# Everything else (and Lua already written for dispatch) goes to the real hyprctl untouched.
+REAL=/usr/bin/hyprctl
+[[ -f "$HOME/.config/hypr/hyprland.lua" ]] || exec "$REAL" "$@"     # classic .conf session: nothing to do
+
+lua_str() { printf '[==[%s]==]' "$1"; }
+
+opts=()                       # global options before the command (-j, -i N, --instance N, -q)
+while [[ $# -gt 0 ]]; do
+    case "$1" in
+        -i|--instance) opts+=("$1" "$2"); shift 2 ;;
+        -j|-q|-r|--quiet) opts+=("$1"); shift ;;
+        *) break ;;
+    esac
+done
+
+translate() {                 # one command line -> Lua, or empty if it should pass through
+    local cmd=$1; shift
+    case "$cmd" in
+        keyword)
+            local key=$1; shift
+            printf 'hyprlang.keyword(%s, %s)' "$(lua_str "$key")" "$(lua_str "$*")" ;;
+        dispatch)
+            [[ "$*" == *"("* ]] && return 1             # already Lua (hl.dsp.…)
+            local name=$1; shift
+            printf 'hyprlang.dispatch(%s, %s)' "$(lua_str "$name")" "$(lua_str "$*")" ;;
+        *) return 1 ;;
+    esac
+}
+
+if [[ "${1:-}" == --batch ]]; then
+    shift
+    IFS=';' read -ra parts <<< "$*"
+    rest=()
+    for part in "${parts[@]}"; do
+        read -ra w <<< "$part"
+        [[ ${#w[@]} -eq 0 ]] && continue
+        if lua=$(translate "${w[@]}"); then "$REAL" "${opts[@]}" eval "$lua"
+        else rest+=("$part"); fi
+    done
+    [[ ${#rest[@]} -gt 0 ]] && exec "$REAL" "${opts[@]}" --batch "$(IFS=';'; echo "${rest[*]}")"
+    exit 0
+fi
+
+if [[ "${1:-}" == keyword || "${1:-}" == dispatch ]] && lua=$(translate "$@"); then
+    exec "$REAL" "${opts[@]}" eval "$lua"
+fi
+exec "$REAL" "${opts[@]}" "$@"

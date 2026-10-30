@@ -51,6 +51,9 @@ ShellRoot {
         WlrLayershell.layer: WlrLayer.Overlay
         WlrLayershell.keyboardFocus: WlrKeyboardFocus.None
         mask: Region {}                                     // clicks go through
+        // no window at all while hidden (some GPUs/VMs draw an idle transparent surface as black)
+        visible: root.shown || hideDelay.running
+        Timer { id: hideDelay; interval: 450; running: !root.shown }
 
         Rectangle {
             id: pill
