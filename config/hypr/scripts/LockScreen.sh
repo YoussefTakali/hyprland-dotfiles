@@ -1,23 +1,17 @@
 #!/usr/bin/env bash
 # /* ---- 💫 https://github.com/JaKooLit 💫 ---- */  ##
-# For Hyprlock
+# Lock now. Weather and album art refresh in the background: they can take many seconds on a slow network,
+# and a lock must never wait for the internet. The lock screen shows the last saved weather.
 
-# Ensure weather cache is up-to-date before locking
-bash "$HOME/.config/hypr/UserScripts/WeatherWrap.sh" >/dev/null 2>&1
-
-# Fetch current album art before locking so hyprlock shows fresh image
-URL=$(playerctl metadata mpris:artUrl 2>/dev/null)
-CACHE="$HOME/.cache/hyprlock_albumart.png"
-
-if [[ -n "$URL" ]]; then
+setsid -f bash -c '
+    timeout 30 bash "$HOME/.config/hypr/UserScripts/WeatherWrap.sh"
+    URL=$(playerctl metadata mpris:artUrl 2>/dev/null)
+    CACHE="$HOME/.cache/hyprlock_albumart.png"           # used by the hyprlock fallback
     if [[ "$URL" == file://* ]]; then
-        cp "${URL#file://}" "$CACHE" 2>/dev/null
-    else
-        curl -sL "$URL" -o "$CACHE.tmp" && mv "$CACHE.tmp" "$CACHE"
+        cp "${URL#file://}" "$CACHE"
+    elif [[ -n "$URL" ]]; then
+        curl -sL --max-time 10 "$URL" -o "$CACHE.tmp" && mv "$CACHE.tmp" "$CACHE"
     fi
-fi
-
-# Pick card / blank music background before hyprlock starts
-"$HOME/.config/hypr/scripts/MusicCard.sh" >/dev/null 2>&1
+' >/dev/null 2>&1 </dev/null
 
 loginctl lock-session
