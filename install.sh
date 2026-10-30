@@ -176,5 +176,5 @@ cat <<EOF
 Log out and back in (or reboot) to start Hyprland with this setup.
   Lock screen:  Super+L        Utilities: Super+X        Cheat sheet: Super+H
 Your previous configs are in $BACKUP
-SDDM theme: the login screen used sddm-astronaut-theme (jake_the_dog) — https://github.com/Keyitdev/sddm-astronaut-theme
 EOF
+(( SDDM )) && echo "Login screen: SDDM with sddm-astronaut-theme (jake_the_dog) — https://github.com/Keyitdev/sddm-astronaut-theme"
