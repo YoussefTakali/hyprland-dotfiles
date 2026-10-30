@@ -1,0 +1,9 @@
+[Desktop Entry]
+Type=Application
+Name=Keyboard Shortcuts
+Comment=Add your own keyboard shortcuts without editing files
+Exec=python3 -I @HOME@/.config/hypr/UserScripts/Shortcuts.py
+Icon=preferences-desktop-keyboard-shortcuts
+Categories=Settings;DesktopSettings;
+Keywords=keybind;hotkey;shortcut;keyboard;
+StartupWMClass=io.github.YoussefTakali.Shortcuts

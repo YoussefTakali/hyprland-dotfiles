@@ -83,6 +83,11 @@ chmod +x "$HOME/.config/hypr/UserScripts/"*.py "$HOME/.config/hypr/scripts/"*.py
 mkdir -p "$HOME/.local/share/nautilus-python/extensions"
 cp "$HERE/home/nautilus-python/open-in-kitty.py" "$HOME/.local/share/nautilus-python/extensions/"
 
+# "Keyboard Shortcuts" app in the app menu (Super+X → Keyboard shortcuts also opens it)
+mkdir -p "$HOME/.local/share/applications"
+sed "s|@HOME@|$HOME|g" "$HERE/home/applications/io.github.YoussefTakali.Shortcuts.desktop" \
+    > "$HOME/.local/share/applications/io.github.YoussefTakali.Shortcuts.desktop"
+
 # 4. Prompt theme (oh-my-zsh is installed by the KooL base)
 if [[ -d "$HOME/.oh-my-zsh" ]]; then
     mkdir -p "$HOME/.oh-my-zsh/custom/themes"

@@ -24,6 +24,7 @@ items=(
     "󰗊|Text grab (OCR)|Super+Alt+T|$U/OcrGrab.sh"
     "󰌾|Lock screen style|4 styles|$U/LockStyle.sh"
     "󰌌|Keybinds|Super+H|$S/KeyHints.sh"
+    "󰘳|Keyboard shortcuts|add your own|python3 -I $U/Shortcuts.py"
 )
 
 # Icon color = rofi's wallust accent, so the menu follows the wallpaper theme
