@@ -1,5 +1,8 @@
 #!/usr/bin/env bash
-# Install this Hyprland setup on a Fedora machine.
+# Install this Hyprland desktop on Fedora.
+#
+# Recommended: the graphical installer —  ./setup   (or double-click "Desktop Setup")
+# This script is the terminal version, kept for experienced users and automation:
 #
 #   ./install.sh            base (KooL Fedora-Hyprland, if Hyprland isn't installed yet) + extras + these configs
 #   ./install.sh --no-base  skip the KooL base install (Hyprland already set up)

@@ -1,0 +1,3 @@
+#!/usr/bin/env bash
+# Start the graphical installer (Desktop Setup).
+cd "$(dirname "$0")" && exec python3 -I installer/setup.py "$@"

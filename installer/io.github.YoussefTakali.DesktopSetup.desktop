@@ -1,0 +1,9 @@
+[Desktop Entry]
+Type=Application
+Name=Desktop Setup
+Comment=Install the Hyprland desktop
+Exec=@REPO@/setup
+Icon=system-software-install
+Categories=System;Settings;
+Terminal=false
+StartupWMClass=io.github.YoussefTakali.DesktopSetup
