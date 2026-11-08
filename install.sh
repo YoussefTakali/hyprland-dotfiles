@@ -138,25 +138,11 @@ W=$(ls "$HERE"/wallpapers/current.* | head -1)
 cp "$W" "$HOME/Pictures/wallpapers/"
 cp "$W" "$HOME/.config/hypr/wallpaper_effects/.wallpaper_current"
 command -v wallust >/dev/null && wallust run "$W" >/dev/null 2>&1 || true
-python3 -I "$HOME/.config/hypr/scripts/AccentGuard.py" >/dev/null 2>&1 || true   # readable accent + GTK/kitty accent
+python3 -I "$HOME/.config/hypr/scripts/AccentGuard.py" >/dev/null 2>&1 || true   # readable accent, GTK/kitty accent, Accent-Folders icons
 
-# 6. Mauve folder icons: recolor Flat-Remix-Blue-Dark's folders (installed by the KooL base)
-SRC_ICONS="$HOME/.icons/Flat-Remix-Blue-Dark"
-DST_ICONS="$HOME/.icons/Flat-Remix-Mauve-Dark"
-if [[ -d "$SRC_ICONS" && ! -d "$DST_ICONS" ]]; then
-    say "Creating the mauve folder icon theme"
-    mkdir -p "$DST_ICONS"
-    cp -r "$SRC_ICONS/places" "$DST_ICONS/"
-    find "$DST_ICONS/places" -type f -name '*.svg' -exec sed -i 's/#367bf0/#a374ec/gI; s/#2b62c0/#7c4cc9/gI' {} +
-    sed 's/^Name=.*/Name=Flat-Remix-Mauve-Dark/; s/^Inherits=.*/Inherits=Flat-Remix-Blue-Dark,breeze-dark,elementary,gnome,hicolor/' \
-        "$SRC_ICONS/index.theme" > "$DST_ICONS/index.theme"
-    gtk-update-icon-cache -f -t "$DST_ICONS" >/dev/null 2>&1 || true
-fi
-
-# 7. Desktop settings
+# 6. Desktop settings
 say "Applying desktop settings"
 gsettings set org.gnome.desktop.interface color-scheme 'prefer-dark' || true
-[[ -d "$DST_ICONS" ]] && gsettings set org.gnome.desktop.interface icon-theme 'Flat-Remix-Mauve-Dark' || true
 gsettings set org.blueman.general plugin-list "['!StatusIcon', '!StatusNotifierItem']" 2>/dev/null || true
 xdg-mime default org.gnome.Nautilus.desktop inode/directory 2>/dev/null || true
 

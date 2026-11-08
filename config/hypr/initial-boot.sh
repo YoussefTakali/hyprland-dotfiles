@@ -14,7 +14,7 @@ waybar_style="$HOME/.config/waybar/style/[Extra] Neon Circuit.css"
 kvantum_theme="catppuccin-mocha-blue"
 color_scheme="prefer-dark"
 gtk_theme="Flat-Remix-GTK-Blue-Dark"
-icon_theme="Flat-Remix-Blue-Dark"
+icon_theme="Accent-Folders"   # written by AccentGuard.py: folders follow the wallpaper accent
 cursor_theme="Bibata-Modern-Ice"
 
 swww="swww img"

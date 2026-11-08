@@ -161,7 +161,8 @@ def recolor_folder_icons(accent_hex):
     if not ADWAITA_PLACES.is_dir():
         return
 
-    for svg_path in ADWAITA_PLACES.glob("folder*.svg"):
+    icons = list(ADWAITA_PLACES.glob("folder*.svg")) + [ADWAITA_PLACES / f"user-{n}.svg" for n in ("desktop", "home", "bookmarks")]
+    for svg_path in (p for p in icons if p.exists()):
         svg = svg_path.read_text()
         for old, new in replacements.items():
             svg = re.sub(rf"(?i)#{old}", lambda m: "#" + (new if m.group(0)[1:].isupper() else new.lower()), svg)
