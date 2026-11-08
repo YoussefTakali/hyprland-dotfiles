@@ -199,7 +199,7 @@ class Setup(Adw.ApplicationWindow):
 
         def row(title, subtitle, state):
             r = Adw.ActionRow(title=title, subtitle=GLib.markup_escape_text(subtitle), subtitle_lines=3)
-            icon = {"ok": "emblem-ok-symbolic", "warn": "dialog-warning-symbolic", "bad": "dialog-error-symbolic"}[state]
+            icon = {"ok": "object-select-symbolic", "warn": "dialog-warning-symbolic", "bad": "dialog-error-symbolic"}[state]
             r.add_prefix(Gtk.Image(icon_name=icon, css_classes=[f"check-{state}"], pixel_size=20))
             g.add(r)
 
@@ -254,7 +254,7 @@ class Setup(Adw.ApplicationWindow):
         g1 = Adw.PreferencesGroup(title="Keyboard")
         self.layouts, current = keyboard_layouts()
         self.kb_row = Adw.ComboRow(title="Layout", enable_search=True,
-                                   model=Gtk.StringList.new([f"{n} ({c})" for c, n in self.layouts]))
+                                   model=Gtk.StringList.new([n if f"({c})" in n.lower() else f"{n} ({c})" for c, n in self.layouts]))
         self.kb_row.set_expression(Gtk.PropertyExpression.new(Gtk.StringObject, None, "string"))
         codes = [c for c, _ in self.layouts]
         if current in codes:
@@ -440,14 +440,14 @@ class Setup(Adw.ApplicationWindow):
             if "NVIDIA_INSTALLED" in notes:
                 text += "\n\nThe NVIDIA driver starts after the restart."
             text += "\n\nShortcuts: Super+H shows all of them, Super+X opens the utilities, Super+L locks."
-            status = Adw.StatusPage(icon_name="emblem-ok-symbolic", title="Your desktop is ready",
+            status = Adw.StatusPage(icon_name="object-select-symbolic", title="Your desktop is ready",
                                     description=GLib.markup_escape_text(text), vexpand=True)
             box.append(status)
             row = Gtk.Box(spacing=12, halign=Gtk.Align.CENTER, margin_bottom=24)
             later = Gtk.Button(label="Restart later", css_classes=["pill"])
             later.connect("clicked", lambda *_: self.close())
             now = Gtk.Button(label="Restart now", css_classes=["suggested-action", "pill"])
-            now.connect("clicked", lambda *_: subprocess.Popen(["systemctl", "reboot"]))
+            now.connect("clicked", self.restart)
             row.append(later)
             row.append(now)
             box.append(row)
@@ -464,6 +464,23 @@ class Setup(Adw.ApplicationWindow):
             btn.connect("clicked", lambda *_: self.close())
             box.append(btn)
         return box
+
+    def restart(self, button):
+        # logind directly: with interactive authorization GNOME asks for a password if a reboot needs one
+        # (another user logged in, an app blocking shutdown) instead of the request failing silently
+        button.set_sensitive(False)
+
+        def finished(bus, res):
+            try:
+                bus.call_finish(res)
+            except GLib.Error as e:
+                button.set_sensitive(True)
+                self.toasts.add_toast(Adw.Toast(title=f"Couldn't restart ({e.message}). Restart from the system menu.",
+                                                timeout=10))
+
+        Gio.bus_get_sync(Gio.BusType.SYSTEM).call(
+            "org.freedesktop.login1", "/org/freedesktop/login1", "org.freedesktop.login1.Manager", "Reboot",
+            GLib.Variant("(b)", (True,)), None, Gio.DBusCallFlags.ALLOW_INTERACTIVE_AUTHORIZATION, -1, None, finished)
 
     def on_close(self, *_):
         if self.installing:
@@ -486,8 +503,12 @@ class App(Adw.Application):
     def do_activate(self):
         win = self.props.active_window or Setup(self)
         win.present()
-        if os.environ.get("SETUP_PAGE") in ("check", "choices"):     # for screenshots / testing only
-            win.go(os.environ["SETUP_PAGE"])
+        page = os.environ.get("SETUP_PAGE")                          # for screenshots / testing only
+        if page in ("check", "choices"):
+            win.go(page)
+        elif page == "done":
+            win.done_holder.set_child(win.page_done(True))
+            win.go("done")
 
 
 if __name__ == "__main__":

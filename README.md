@@ -11,32 +11,32 @@
 
 ## Demo
 
-https://github.com/YoussefTakali/hyprland-dotfiles/raw/main/assets/demo.mp4
+<p align="center">
+  <img src="assets/demo.webp" alt="Demo: app launcher, terminal, power menu, utilities hub, lock screen and wallpaper switching" width="100%">
+</p>
 
-> *App launcher, terminal, power menu, utilities hub, lock screen, wallpaper switching with adaptive colors — all in under 2 minutes.*
+<p align="center"><i>App launcher, terminal, power menu, utilities hub, lock screen, and a wallpaper switch where every colour follows the new wallpaper (1.5× speed).<br>
+Full-quality recording: <a href="assets/demo.mp4">demo.mp4</a></i></p>
 
-<details>
-<summary>Screenshots</summary>
+## Screenshots
 
-### Lock Screen
-<img src="assets/lockscreen.png" alt="Lock Screen" width="100%">
+### Lock screen
+<img src="assets/lockscreen.png" alt="Lock screen" width="100%">
 
-### Lock Screen — Ambient Mode
-<img src="assets/lockscreen-ambient.png" alt="Lock Screen Ambient" width="100%">
+### Lock screen: ambient mode
+<img src="assets/lockscreen-ambient.png" alt="Lock screen ambient mode" width="100%">
 
-### Power Menu
-<img src="assets/powermenu.png" alt="Power Menu" width="100%">
+### Power menu
+<img src="assets/powermenu.png" alt="Power menu" width="100%">
 
-### Utilities Hub
-<img src="assets/utilities.png" alt="Utilities Hub" width="100%">
+### Utilities hub (Super+X)
+<img src="assets/utilities.png" alt="Utilities hub" width="100%">
 
 ### Terminal
-<img src="assets/terminal.png" alt="Terminal" width="100%">
+<img src="assets/terminal.png" alt="Terminal with fastfetch" width="100%">
 
 ### Waybar
 <img src="assets/waybar.png" alt="Waybar" width="100%">
-
-</details>
 
 ## Features
 
