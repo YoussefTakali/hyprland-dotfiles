@@ -431,8 +431,7 @@ class Setup(Adw.ApplicationWindow):
         notes = {n.split(" ", 1)[0]: (n.split(" ", 1)[1] if " " in n else "") for n in self.notes}
         if ok:
             text = "Restart the PC to start using it. "
-            if LOGINS[self.login_row.get_selected()][0] == "keep":
-                text += "On the login screen, Hyprland is already selected for you."
+            text += "On the login screen, Hyprland is already selected for you."
             if "SECURE_BOOT_KEY" in notes:
                 text += ("\n\nAfter restarting, a blue screen appears (MOK management): choose “Enroll MOK”, then "
                          "“Continue”, “Yes”, type the driver key password you chose, and “Reboot”. "

@@ -173,6 +173,7 @@ if (( SDDM )); then
         sudo systemctl disable gdm
     fi
     sudo systemctl enable sddm
+    printf '[Last]\nUser=%s\nSession=/usr/share/wayland-sessions/hyprland.desktop\n' "$USER" | sudo tee /var/lib/sddm/state.conf >/dev/null   # SDDM would pre-select the first session (GNOME Classic)
 fi
 
 say "Done"

@@ -236,6 +236,7 @@ if [[ "$OPT_LOGIN" == sddm ]]; then
     [[ "$MODE" == hybrid-* ]] && run sudo bash "$HOME/.config/hypr/UserScripts/gpu-login-screen-fix.sh"
     systemctl is-enabled gdm >/dev/null 2>&1 && run sudo systemctl disable gdm
     run sudo systemctl enable sddm
+    printf '[Last]\nUser=%s\nSession=/usr/share/wayland-sessions/hyprland.desktop\n' "$USER" | sudo tee /var/lib/sddm/state.conf >/dev/null   # SDDM would pre-select the first session (GNOME Classic)
 else
     # GNOME's login screen: pre-select Hyprland for this user
     printf '[User]\nSession=hyprland\nSystemAccount=false\n' | sudo tee "/var/lib/AccountsService/users/$USER" >/dev/null
