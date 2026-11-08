@@ -115,6 +115,63 @@ def main():
         f"active_tab_background {a}\nactive_tab_foreground #11111b\nactive_border_color {a}\nurl_color {a}\n")
     subprocess.run(["pkill", "-SIGUSR1", "-x", "kitty"], check=False)
 
+    # recolor Adwaita folder icons to match the accent
+    recolor_folder_icons(fixed[13])
+
+
+# ── Folder icon recoloring ────────────────────────────────────────────────────
+
+ADWAITA_PLACES = Path("/usr/share/icons/Adwaita/scalable/places")
+# Adwaita's blue palette → we shift hue+saturation to the accent, preserving lightness ratios
+BLUES = {
+    "438de6": 0,    # darkest (back face)
+    "62a0ea": 1,    # mid (gradient stops)
+    "a4caee": 2,    # light (front face)
+    "afd4ff": 3,    # lighter (gradient highlight)
+    "c0d5ea": 4,    # lightest (gradient edge)
+}
+
+
+def hsl_shift(hex_src, target_h, target_s):
+    """Shift hue and saturation of hex_src to target, keeping lightness."""
+    r, g, b = to_rgb(hex_src)
+    h, l, s = colorsys.rgb_to_hls(r / 255, g / 255, b / 255)
+    nr, ng, nb = colorsys.hls_to_rgb(target_h, l, min(target_s * (0.5 + l * 0.7), 1.0))
+    return to_hex((nr * 255, ng * 255, nb * 255))
+
+
+def recolor_folder_icons(accent_hex):
+    accent_rgb = to_rgb(accent_hex)
+    ah, al, a_s = colorsys.rgb_to_hls(*(c / 255 for c in accent_rgb))
+
+    replacements = {}
+    for blue_hex in BLUES:
+        new_hex = hsl_shift(blue_hex, ah, a_s)
+        replacements[blue_hex] = new_hex
+
+    theme_dir = HOME / ".local/share/icons/Accent-Folders"
+    places_dir = theme_dir / "scalable/places"
+    places_dir.mkdir(parents=True, exist_ok=True)
+
+    (theme_dir / "index.theme").write_text(
+        "[Icon Theme]\nName=Accent Folders\nComment=Adwaita with accent-colored folders\n"
+        "Inherits=Adwaita\nDirectories=scalable/places\n\n"
+        "[scalable/places]\nSize=128\nMinSize=8\nMaxSize=512\nType=Scalable\nContext=Places\n")
+
+    if not ADWAITA_PLACES.is_dir():
+        return
+
+    for svg_path in ADWAITA_PLACES.glob("folder*.svg"):
+        svg = svg_path.read_text()
+        for old, new in replacements.items():
+            svg = re.sub(rf"(?i)#{old}", lambda m: "#" + (new if m.group(0)[1:].isupper() else new.lower()), svg)
+        (places_dir / svg_path.name).write_text(svg)
+
+    # set the icon theme
+    subprocess.run(["gsettings", "set", "org.gnome.desktop.interface", "icon-theme", "Accent-Folders"], check=False)
+    # clear icon cache so running apps pick up the new icons
+    subprocess.run(["gtk-update-icon-cache", "-f", "-t", str(theme_dir)], check=False, capture_output=True)
+
 
 if __name__ == "__main__":
     main()
