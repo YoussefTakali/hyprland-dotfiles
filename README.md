@@ -1,45 +1,103 @@
-# Hyprland dotfiles (Fedora)
+<h1 align="center">Hyprland Desktop</h1>
 
-My Hyprland desktop on Fedora, built on top of [JaKooLit's Fedora-Hyprland](https://github.com/JaKooLit/Fedora-Hyprland),
-themed around Catppuccin Mocha + a wallust accent that follows the wallpaper.
+<p align="center">
+  <b>A polished Hyprland desktop for Fedora</b><br>
+  Catppuccin Mocha · wallust adaptive accents · Quickshell lock screen · Waybar · rofi
+</p>
 
-## Install on a new machine
+<p align="center">
+  <img src="assets/desktop.png" alt="Desktop" width="100%">
+</p>
+
+## Demo
+
+https://github.com/YoussefTakali/hyprland-dotfiles/raw/main/assets/demo.mp4
+
+> *App launcher, terminal, power menu, utilities hub, lock screen, wallpaper switching with adaptive colors — all in under 2 minutes.*
+
+<details>
+<summary>Screenshots</summary>
+
+### Lock Screen
+<img src="assets/lockscreen.png" alt="Lock Screen" width="100%">
+
+### Lock Screen — Ambient Mode
+<img src="assets/lockscreen-ambient.png" alt="Lock Screen Ambient" width="100%">
+
+### Power Menu
+<img src="assets/powermenu.png" alt="Power Menu" width="100%">
+
+### Utilities Hub
+<img src="assets/utilities.png" alt="Utilities Hub" width="100%">
+
+### Terminal
+<img src="assets/terminal.png" alt="Terminal" width="100%">
+
+### Waybar
+<img src="assets/waybar.png" alt="Waybar" width="100%">
+
+</details>
+
+## Features
+
+- **Lock screen** — 4 switchable styles (Slate, Iris, Fog, Cards). Frosted wallpaper, music controls with album art and cava visualizer, weather, battery, ambient mode. Secure Wayland session lock with hyprlock fallback.
+- **Power menu** — animated orbs with a 3-second countdown ring. Lock, sleep, logout, restart, shutdown.
+- **Volume & brightness OSD** — glass pill overlay with accent-colored progress bar, follows your wallpaper theme.
+- **Waybar** — adaptive colors from wallpaper. Wi-Fi with speed, Bluetooth with battery, GPU/CPU, privacy indicators, cava visualizer.
+- **Utilities hub** (Super+X) — screenshot, screen recorder, color picker, clipboard, calculator, emoji, Wi-Fi, Bluetooth, power profiles, night light, OCR, lock screen style switcher.
+- **Keyboard Shortcuts GUI** — add and edit shortcuts without config files.
+- **Video wallpapers** — Super+W picks images or videos; mpvpaper with hardware decoding, pauses under fullscreen, restores on reboot.
+- **Spotify integration** — runs in the background, toggle with Super+Alt+M, Super+Q hides instead of closing.
+- **Adaptive theming** — wallust extracts colors from wallpaper; AccentGuard ensures WCAG-readable accents across Waybar, GTK, kitty, and the lock screen.
+- **Hyprland 0.57 Lua** — full compatibility layer that loads `.conf` files through the new Lua config, with auto-reload.
+
+## GPU Support
+
+Automatic detection and configuration for:
+- **NVIDIA** — open kernel modules (akmod), PRIME offload for hybrid laptops, Secure Boot MOK signing, VA-API, suspend/resume
+- **AMD** — mesa freeworld drivers, PRIME offload for hybrid setups, VA-API with radeonsi
+- **Intel** — iHD media driver, hybrid GPU pairing
+
+Run `~/.config/hypr/scripts/GpuInfo.sh` to see your detected setup.
+
+## Install
+
+### Graphical Installer (recommended)
 
 ```sh
 git clone https://github.com/YoussefTakali/hyprland-dotfiles.git
 cd hyprland-dotfiles
-./install.sh            # KooL base (if Hyprland isn't installed) + extra packages + these configs
-./install.sh --sddm     # same, plus the SDDM login fix (French keyboard + visible cursor)
+./setup
 ```
 
-Existing configs are backed up to `~/.config-backup-<date>/` before anything is replaced.
+A GTK4 installer walks you through package installation, driver setup, and configuration.
 
-On a fresh Fedora you only need `git` + `gh` (repo is private) — the script downloads and runs the
-KooL Fedora-Hyprland installer itself. In that installer, say yes to: SDDM, GTK themes, Bibata cursor,
-zsh + oh-my-zsh, quickshell, and the NVIDIA option if the machine has an NVIDIA GPU.
+### CLI
 
-Not included: the full wallpaper collection (only the current wallpaper), and apps like Spotify/Firefox.
+```sh
+./install.sh            # base install + configs
+./install.sh --sddm     # with SDDM login manager
+```
 
-## What's in it
+**Requirements:** fresh Fedora with `git` installed. The installer handles everything else — KooL base, packages, GPU drivers, configs, and theming.
 
-| Area | Highlights |
-|---|---|
-| Lock screen | Quickshell lock (`config/quickshell/lockscreen`): frosted wallpaper, music card with album art, cava bars, seek, prev/play/next, audio-output switcher, two-click power buttons, unlock animation. Secure session lock with hyprlock fallback (`hypr/scripts/QsLock.sh`). |
-| Waybar | Wi-Fi + speed module, Bluetooth with device/battery, GPU usage next to CPU, privacy (mic/screen) indicator, recording indicator, clipboard button |
-| Utilities | **Super+X** grid: screenshot, screen recorder, color picker, clipboard, calculator, emoji, Wi-Fi, Bluetooth, power profile, night light, OCR text grab, keybinds |
-| Cheat sheet | **Super+H**: live keybinds grouped by category (rofi) |
-| Menus | rofi theme `KooL_utilities` (blurred, rounded) for every popup; Wi-Fi/Bluetooth menus with VPN, hidden networks, pairing |
-| Wallpaper | Super+W picks images **or videos** (mp4/mkv/mov/webm in ~/Pictures/wallpapers); videos play with mpvpaper, pause under fullscreen apps, theme colors come from a frame, and the video comes back after reboot |
-| Windows | solid accent border, soft accent glow, rounded corners |
-| Terminal | kitty with Catppuccin Mocha + JetBrains Mono, wallpaper startup card (fastfetch), readable `agnosterzak-mocha` prompt |
-| GTK apps | translucent Catppuccin + mauve style for GTK3/GTK4 apps (Nautilus, settings windows), mauve folder icons |
+Existing configs are backed up to `~/.config-backup-<date>/` before replacement.
 
-## Keys
+## Keyboard Shortcuts
 
 | Keys | Action |
 |---|---|
+| Super+Enter | terminal (kitty) |
 | Super+L | lock |
 | Super+X | utilities hub |
 | Super+H | cheat sheet |
+| Super+Q | close window (hides Spotify) |
+| Super+W | wallpaper picker |
+| Super+Alt+M | toggle Spotify |
 | Super+Alt+Print | start/stop screen recording |
-| Super+Alt+X / Super+Alt+T | color picker / text grab (OCR) |
+| Super+Alt+X | color picker |
+| Super+Alt+T | text grab (OCR) |
+
+## Credits
+
+Built on top of [JaKooLit's Fedora-Hyprland](https://github.com/JaKooLit/Fedora-Hyprland) with [Catppuccin Mocha](https://github.com/catppuccin/catppuccin) theming and [wallust](https://codeberg.org/explosion-mental/wallust) color extraction.
