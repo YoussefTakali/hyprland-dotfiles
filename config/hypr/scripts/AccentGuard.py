@@ -168,8 +168,18 @@ def recolor_folder_icons(accent_hex):
             svg = re.sub(rf"(?i)#{old}", lambda m: "#" + (new if m.group(0)[1:].isupper() else new.lower()), svg)
         (places_dir / svg_path.name).write_text(svg)
 
-    # set the icon theme
+    # set the icon theme: gsettings for apps that read it through the settings portal, settings.ini for
+    # GTK apps started where that portal doesn't answer (seen on a fresh install: Nautilus fell back to Adwaita)
     subprocess.run(["gsettings", "set", "org.gnome.desktop.interface", "icon-theme", "Accent-Folders"], check=False)
+    for gtk in ("gtk-3.0", "gtk-4.0"):
+        ini = C / gtk / "settings.ini"
+        lines = ini.read_text().splitlines() if ini.exists() else []
+        if "[Settings]" not in (l.strip() for l in lines):
+            lines.insert(0, "[Settings]")
+        lines = [l for l in lines if not l.strip().startswith("gtk-icon-theme-name")]
+        lines.insert([l.strip() for l in lines].index("[Settings]") + 1, "gtk-icon-theme-name=Accent-Folders")
+        ini.parent.mkdir(parents=True, exist_ok=True)
+        ini.write_text("\n".join(lines) + "\n")
     # clear icon cache so running apps pick up the new icons
     subprocess.run(["gtk-update-icon-cache", "-f", "-t", str(theme_dir)], check=False, capture_output=True)
 
