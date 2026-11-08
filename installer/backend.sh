@@ -162,6 +162,21 @@ run sudo dnf install -y --skip-unavailable \
     python3-gobject jq tuned-ppd libnotify julietaula-montserrat-fonts nautilus-python mokutil qalculate \
     || fail "Couldn't install the desktop's apps."
 
+# KooL downloads the Nerd Font from GitHub without checking the result; when that download fails every
+# bar and menu icon shows as an empty box
+if ! fc-list : family | grep -qi "JetBrainsMono Nerd Font"; then
+    echo "Downloading the JetBrainsMono Nerd Font (bar and menu icons)"
+    NF_DIR="$HOME/.local/share/fonts/JetBrainsMonoNerd" NF_TMP=$(mktemp)
+    if curl -fsSL --retry 5 --retry-delay 3 -o "$NF_TMP" \
+            https://github.com/ryanoasis/nerd-fonts/releases/latest/download/JetBrainsMono.tar.xz \
+        && mkdir -p "$NF_DIR" && tar -xJf "$NF_TMP" -C "$NF_DIR"; then
+        fc-cache -f "$NF_DIR" >/dev/null 2>&1
+    else
+        warn "Couldn't download the JetBrainsMono Nerd Font, so some icons will show as boxes. Run the installer again later."
+    fi
+    rm -f "$NF_TMP"
+fi
+
 # ── 6. configs ──────────────────────────────────────────────────────────────
 step "Installing the desktop's settings"
 mkdir -p "$BACKUP" "$HOME/.config"
