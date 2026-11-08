@@ -12,7 +12,7 @@
 ## Demo
 
 <p align="center">
-  <img src="assets/demo.webp" alt="Demo: app launcher, terminal, power menu, utilities hub, lock screen and wallpaper switching" width="100%">
+  <img src="assets/demo.webp.png" alt="Demo: app launcher, terminal, power menu, utilities hub, lock screen and wallpaper switching" width="100%">
 </p>
 
 <p align="center"><i>App launcher, terminal, power menu, utilities hub, lock screen, and a wallpaper switch where every colour follows the new wallpaper (1.5× speed).<br>
