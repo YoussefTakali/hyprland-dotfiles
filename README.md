@@ -1,7 +1,7 @@
 <h1 align="center">Hyprland Desktop</h1>
 
 <p align="center">
-  <b>A polished Hyprland desktop for Fedora</b><br>
+  <b>A polished Hyprland desktop for Arch, Fedora and Ubuntu</b><br>
   Catppuccin Mocha · wallust adaptive accents · Quickshell lock screen · Waybar · rofi
 </p>
 
@@ -49,14 +49,20 @@ Full-quality recording: <a href="assets/demo.mp4">demo.mp4</a></i></p>
 - **Video wallpapers** — Super+W picks images or videos; mpvpaper with hardware decoding, pauses under fullscreen, restores on reboot.
 - **Spotify integration** — runs in the background, toggle with Super+Alt+M, Super+Q hides instead of closing.
 - **Adaptive theming** — wallust extracts colors from wallpaper; AccentGuard ensures WCAG-readable accents across Waybar, GTK, kitty, and the lock screen.
+- **Themes** (Super+Ctrl+T menu, Super+Shift+T next, Super+Ctrl+Shift+T previous) — five looks that switch borders, corners, blur, shadows, animations, the bar and rofi together: *Ultimate* (end-4 glass + ML4W shadows), *end-4 Material*, *ML4W Soft*, *Omarchy Sharp*, and the original look. Colours always follow the wallpaper.
+- **Window tools from Omarchy** — pop a window out and pin it (Super+O), zen mode (Super+Shift+Backspace), per-window transparency (Super+Backspace), idle-lock toggle (Super+Ctrl+I), power menu (Super+Escape).
+- **Smarter window rules from end-4** — file pickers and "wants to save/open" dialogs float centred, every Picture-in-Picture spelling is pinned, screen-sharing bars stay small, games get the lowest-latency (tearing) path.
+- **All 53 Waybar styles checked** — broken colours fixed; see-through styles get a light tint so the blur makes them frosted glass instead of unreadable.
 - **Hyprland 0.57 Lua** — full compatibility layer that loads `.conf` files through the new Lua config, with auto-reload.
 
 ## GPU Support
 
 Automatic detection and configuration for:
-- **NVIDIA** — open kernel modules (akmod), PRIME offload for hybrid laptops, Secure Boot MOK signing, VA-API, suspend/resume
-- **AMD** — mesa freeworld drivers, PRIME offload for hybrid setups, VA-API with radeonsi
+- **NVIDIA** — open kernel modules (Fedora: akmod + Secure Boot MOK signing; Arch: nvidia-open; Ubuntu: ubuntu-drivers), PRIME offload for hybrid laptops, VA-API, suspend/resume
+- **AMD** — Mesa with full video decoding (Fedora: freeworld), PRIME offload for hybrid setups, VA-API with radeonsi
 - **Intel** — iHD media driver, hybrid GPU pairing
+
+The bar's GPU module reads live usage on all three (NVIDIA: nvidia-smi, AMD: amdgpu sysfs, Intel: clock speed) with the real card name.
 
 Run `~/.config/hypr/scripts/GpuInfo.sh` to see your detected setup.
 
@@ -75,11 +81,22 @@ A GTK4 installer walks you through package installation, driver setup, and confi
 ### CLI
 
 ```sh
-./install.sh            # base install + configs
-./install.sh --sddm     # with SDDM login manager
+./install.sh                 # everything: Hyprland, drivers, apps, configs
+./install.sh --no-base       # Hyprland already installed: configs + apps only
+./install.sh --sddm          # also the themed SDDM login screen
+./install.sh --jack-fix      # 3.5mm jack silent? keep it on despite broken jack detection
+./install.sh --help          # all options (bar style, lock style, keyboard, no drivers)
 ```
 
-**Requirements:** fresh Fedora with `git` installed. The installer handles everything else — KooL base, packages, GPU drivers, configs, and theming.
+### Supported systems
+
+| Distro | Hyprland from | Notes |
+|---|---|---|
+| **Arch** (and Arch-based) | official repos | wallust, wlogout, mpvpaper, cursor/GTK theme from the AUR (yay is installed if missing) |
+| **Fedora** | sdegler COPR via JaKooLit's Fedora-Hyprland scripts | RPM Fusion for drivers and codecs |
+| **Ubuntu 26.04 LTS or newer** | `ppa:cppiber/hyprland` | wallust, awww and mpvpaper are built from source; Quickshell too on 26.04 (packaged from 26.10). Ubuntu 24.04/25.10 can't run this desktop (X11-only rofi, Qt too old for Quickshell) |
+
+**Requirements:** `git` and an internet connection. The installer handles everything else — Hyprland, packages, GPU drivers, configs, and theming.
 
 Existing configs are backed up to `~/.config-backup-<date>/` before replacement.
 
@@ -97,7 +114,12 @@ Existing configs are backed up to `~/.config-backup-<date>/` before replacement.
 | Super+Alt+Print | start/stop screen recording |
 | Super+Alt+X | color picker |
 | Super+Alt+T | text grab (OCR) |
+| Super+Ctrl+T | theme menu |
+| Super+Shift+T | next theme |
+| Super+O | pop window out (float + pin) |
+| Super+Shift+Backspace | zen mode |
+| Super+Escape | power menu |
 
 ## Credits
 
-Built on top of [JaKooLit's Fedora-Hyprland](https://github.com/JaKooLit/Fedora-Hyprland) with [Catppuccin Mocha](https://github.com/catppuccin/catppuccin) theming and [wallust](https://codeberg.org/explosion-mental/wallust) color extraction.
+Built on top of [JaKooLit's Hyprland dotfiles](https://github.com/JaKooLit/Hyprland-Dots) and [Fedora-Hyprland](https://github.com/JaKooLit/Fedora-Hyprland), with looks, animations, rules and keybinds adapted from [end-4](https://github.com/end-4/dots-hyprland), [Omarchy](https://github.com/basecamp/omarchy), [ML4W](https://github.com/mylinuxforwork/dotfiles) and [HyDE](https://github.com/HyDE-Project/HyDE), plus [Catppuccin Mocha](https://github.com/catppuccin/catppuccin) theming and [wallust](https://codeberg.org/explosion-mental/wallust) color extraction.

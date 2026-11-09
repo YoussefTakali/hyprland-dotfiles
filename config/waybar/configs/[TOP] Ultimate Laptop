@@ -1,0 +1,76 @@
+/* ---- 💫 https://github.com/JaKooLit 💫 ---- */
+
+// 
+{
+"include": [
+  "$HOME/.config/waybar/Modules",
+  "$HOME/.config/waybar/ModulesWorkspaces",
+  "$HOME/.config/waybar/ModulesCustom",
+  "$HOME/.config/waybar/ModulesGroups",
+  "$HOME/.config/waybar/UserModules",
+  ],
+"temperature": {
+	"interval": 10,
+	"tooltip": true,
+	"hwmon-path-abs": "@CPU_HWMON@",   // set by the installer (k10temp / coretemp / zenpower)
+	"input-filename": "@CPU_TEMP_INPUT@",
+	"critical-threshold": 85,
+	"format-critical": "{temperatureC}°C {icon}",
+	"format": "{temperatureC}°C {icon}",
+	"format-icons": ["󰈸"],
+	"on-click-right": "kitty -T btop -e btop"
+},
+"group/status": {
+	"orientation": "inherit",
+	"drawer": {
+		"transition-duration": 500,
+		"children-class": "custom/power",
+		"transition-left-to-right": false
+	},
+	"modules": [
+		"custom/power",
+		"custom/lock",
+		"custom/keyboard"
+	]
+},
+"layer": "top",
+//"mode": "dock",
+"exclusive": true,
+"passthrough": false,
+"position": "top",
+"spacing": 3,
+"fixed-center": true,
+"ipc": true,
+"margin-top": 3,
+"margin-left": 8,
+"margin-right": 8,
+
+"modules-left": [
+	"custom/cava_mviz",
+	"custom/recorder",
+	"custom/playerctl",
+	"hyprland/window",
+	],
+
+"modules-center": [
+	"group/app_drawer",
+	"group/notify",
+	"hyprland/workspaces#rw",
+	"clock",
+	"custom/weather",
+	"idle_inhibitor",	
+	"custom/hint",	
+	],
+
+"modules-right": [
+	"privacy",
+	"tray",
+	"group/net_bt",
+	"group/laptop",
+	"group/hw_drawer",
+	"group/audio",
+	"custom/clipboard",
+	"custom/nightlight",
+	"group/status",
+	],
+}

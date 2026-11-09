@@ -9,12 +9,18 @@
 set -euo pipefail
 [[ $EUID -eq 0 ]] || { echo "Run with sudo: sudo bash $0"; exit 1; }
 
-USER_HOME=$(getent passwd "${SUDO_USER:-rhast}" | cut -d: -f6)
+USER_HOME=$(getent passwd "${SUDO_USER:-$(logname 2>/dev/null)}" | cut -d: -f6)
 CURSOR=Bibata-Modern-Ice
 
 # 1. X11 greeter packages
-rpm -q sddm-x11 >/dev/null || dnf swap -y sddm-wayland-generic sddm-x11   # the two greeter packages conflict
-dnf install -y xorg-x11-server-Xorg
+if command -v dnf >/dev/null; then
+    rpm -q sddm-x11 >/dev/null || dnf swap -y sddm-wayland-generic sddm-x11   # the two greeter packages conflict
+    dnf install -y xorg-x11-server-Xorg
+elif command -v pacman >/dev/null; then
+    pacman -S --needed --noconfirm xorg-server
+elif command -v apt-get >/dev/null; then
+    DEBIAN_FRONTEND=noninteractive apt-get install -y xserver-xorg-core xserver-xorg-input-libinput
+fi
 
 # 2. Cursor theme readable by the sddm user (it can't read your home folder)
 if [[ -d "$USER_HOME/.icons/$CURSOR" && ! -d "/usr/share/icons/$CURSOR" ]]; then

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Desktop Setup — graphical installer for this Hyprland desktop on Fedora.
+"""Desktop Setup — graphical installer for this Hyprland desktop on Arch, Fedora and Ubuntu (26.04+).
 
 Pages: Welcome → Your PC (checks) → Choices → Installing (progress + log) → Done.
 The work is done by installer/backend.sh; this window shows its progress lines (@@STEP, @@PROGRESS, …).
@@ -29,10 +29,11 @@ LOCKS = [("Slate", "Glass pane on the left, wallpaper drifting"),
          ("Iris", "A clear lens between the hours and minutes"),
          ("Fog", "Misted glass with the time wiped clean"),
          ("Cards", "Centred clock with a music card")]
-BARS = [("adaptive", "Classic bar", "One bar across the top, colours from the wallpaper"),
+BARS = [("ultimate", "Ultimate glass bar", "Frosted bar of pills; its shape follows the theme switcher (Super+Ctrl+T)"),
+        ("adaptive", "Classic bar", "One bar across the top, colours from the wallpaper"),
         ("glass", "Glass islands", "Three floating glass groups, colours from the wallpaper")]
-LOGINS = [("keep", "Fedora's login screen", "Recommended. Hyprland is pre-selected for you"),
-          ("sddm", "Themed login screen (SDDM)", "Animated theme; replaces Fedora's login screen")]
+LOGINS = [("keep", "This PC's login screen", "Recommended. Hyprland is pre-selected for you"),
+          ("sddm", "Themed login screen (SDDM)", "Animated theme; replaces the current login screen")]
 
 CSS = b"""
 .step-title { font-size: 1.25em; font-weight: bold; }
@@ -41,6 +42,15 @@ CSS = b"""
 .check-warn { color: @warning_color; }
 .check-bad { color: @error_color; }
 progressbar trough, progressbar progress { min-height: 10px; border-radius: 6px; }
+"""
+# The desktop's GTK theme draws windows see-through (glass, for Hyprland's blur). The installer must stay readable
+# on any PC and over any window, so it gets solid colours, applied above the user's theme.
+SOLID_CSS = b"""
+:root { --window-bg-color: #181825; --view-bg-color: #1e1e2e; --headerbar-bg-color: #181825;
+        --headerbar-backdrop-color: #181825; --card-bg-color: rgba(255, 255, 255, 0.06); }
+@define-color window_bg_color #181825;
+@define-color view_bg_color #1e1e2e;
+window, window.background { background-color: #181825; }
 """
 
 
@@ -82,9 +92,9 @@ def describe_graphics(info):
     elif mode == "nvidia":
         text = "NVIDIA graphics."
     elif mode == "amd":
-        text = "AMD graphics: drivers are built into Fedora; full video decoding gets added."
+        text = "AMD graphics: drivers are built into Linux; full video decoding gets added."
     elif mode == "intel":
-        text = "Intel graphics: drivers are built into Fedora; full video decoding gets added."
+        text = "Intel graphics: drivers are built into Linux; full video decoding gets added."
     else:
         text = "No known graphics card found; the desktop may not start."
     if "nvidia" in mode:
@@ -120,6 +130,37 @@ def secure_boot():
         return "enabled" in out
     except Exception:
         return False
+
+
+def os_release():
+    info = {}
+    try:
+        for line in Path("/etc/os-release").read_text().splitlines():
+            k, _, v = line.partition("=")
+            info[k] = v.strip('"')
+    except Exception:
+        pass
+    return info
+
+
+def distro():
+    """(id, ok, message): arch / fedora / ubuntu, whether this release can run the desktop, and why not."""
+    osr = os_release()
+    ids = [osr.get("ID", "")] + osr.get("ID_LIKE", "").split()
+    for d in ("arch", "fedora", "ubuntu"):
+        if d in ids:
+            break
+    else:
+        return "", False, "This installer supports Arch, Fedora and Ubuntu."
+    if d == "ubuntu":
+        try:
+            ver = float(osr.get("UBUNTU_VERSION_ID") or osr.get("VERSION_ID", "0"))
+        except ValueError:
+            ver = 0
+        if ver < 26.04:
+            return d, False, ("Ubuntu 26.04 LTS or newer is needed (older releases have an X11-only rofi "
+                              "and a Qt too old for the lock screen).")
+    return d, True, ""
 
 
 def os_name():
@@ -204,10 +245,10 @@ class Setup(Adw.ApplicationWindow):
             g.add(r)
 
         name = os_name()
-        is_fedora = "Fedora" in name
-        row("System", name if is_fedora else f"{name}. This installer is for Fedora.", "ok" if is_fedora else "bad")
-        if not is_fedora:
-            problems.append("not Fedora")
+        self.distro, ok, why = distro()
+        row("System", name if ok else f"{name}. {why}", "ok" if ok else "bad")
+        if not ok:
+            problems.append("unsupported system")
 
         names = gpu_names()
         mode = self.info.get("MODE", "unknown")
@@ -215,7 +256,9 @@ class Setup(Adw.ApplicationWindow):
             "warn" if mode == "unknown" else "ok")
 
         sb = secure_boot()
-        self.needs_mok = sb and "nvidia" in mode and not self.info.get("NVIDIA_DRIVER")
+        # Fedora builds the driver locally and signs it with a key approved via a password (MOK);
+        # Ubuntu asks for its own MOK password in the terminal, Arch leaves signing to the user
+        self.needs_mok = sb and "nvidia" in mode and not self.info.get("NVIDIA_DRIVER") and self.distro == "fedora"
         if self.needs_mok:
             row("Secure Boot", "On. The NVIDIA driver must be approved once at the next start: you'll choose a "
                                "password on the next page and type it on a blue screen after restarting.", "warn")
@@ -227,7 +270,7 @@ class Setup(Adw.ApplicationWindow):
         if free < 8:
             problems.append("disk")
 
-        online = subprocess.run(["curl", "-sfI", "--max-time", "6", "https://fedoraproject.org"],
+        online = subprocess.run(["curl", "-sfI", "--max-time", "6", "https://github.com"],
                                 capture_output=True).returncode == 0
         row("Internet", "Connected" if online else "Not connected — connect to the internet first", "ok" if online else "bad")
         if not online:
@@ -278,7 +321,8 @@ class Setup(Adw.ApplicationWindow):
         mode = self.info.get("MODE", "unknown")
         parts = []
         if "nvidia" in mode and not self.info.get("NVIDIA_DRIVER"):
-            parts.append("NVIDIA driver (RPM Fusion)")
+            parts.append({"fedora": "NVIDIA driver (RPM Fusion)", "ubuntu": "NVIDIA driver (ubuntu-drivers)",
+                          "arch": "NVIDIA driver (nvidia-open)"}.get(getattr(self, "distro", ""), "NVIDIA driver"))
         if "intel" in self.info.get("GPUS", ""):
             parts.append("Intel video decoding")
         if "amd" in self.info.get("GPUS", ""):
@@ -295,6 +339,13 @@ class Setup(Adw.ApplicationWindow):
                                       visible=getattr(self, "has_hyprland", False))
         g4.add(self.base_row)
         page.add(g4)
+
+        g5 = Adw.PreferencesGroup(title="Sound")
+        self.jack_row = Adw.SwitchRow(title="Headphone jack fix", active=False,
+                                      subtitle="Only if headphones/speakers on the 3.5mm jack stay silent: keeps the "
+                                               "jack output on even when the PC doesn't detect the plug")
+        g5.add(self.jack_row)
+        page.add(g5)
 
         box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
         box.append(page)
@@ -359,6 +410,7 @@ class Setup(Adw.ApplicationWindow):
                    OPT_LOGIN=LOGINS[self.login_row.get_selected()][0],
                    OPT_DRIVERS="1" if self.drv_row.get_active() else "0",
                    OPT_MOK_PASSWORD=self.mok_row.get_text() if self.mok_row.get_visible() else "",
+                   OPT_JACK_FIX="1" if self.jack_row.get_active() else "0",
                    OPT_SKIP_BASE="1" if (getattr(self, "has_hyprland", False) and not self.base_row.get_active()) else "0")
         # one password prompt, from the system
         r = subprocess.run(["pkexec", str(GRANT), "grant", USER], capture_output=True, text=True)
@@ -436,6 +488,9 @@ class Setup(Adw.ApplicationWindow):
                 text += ("\n\nAfter restarting, a blue screen appears (MOK management): choose “Enroll MOK”, then "
                          "“Continue”, “Yes”, type the driver key password you chose, and “Reboot”. "
                          "This happens only once and lets the NVIDIA driver load with Secure Boot on.")
+            if "NO_LOGIN_SCREEN" in notes:
+                text += ("\n\nThis PC has no login screen: log in on the console and type “Hyprland”, "
+                         "or run the installer again and choose the themed login screen.")
             if "NVIDIA_INSTALLED" in notes:
                 text += "\n\nThe NVIDIA driver starts after the restart."
             text += "\n\nShortcuts: Super+H shows all of them, Super+X opens the utilities, Super+L locks."
@@ -498,6 +553,9 @@ class App(Adw.Application):
         css = Gtk.CssProvider()
         css.load_from_data(CSS)
         Gtk.StyleContext.add_provider_for_display(Gdk.Display.get_default(), css, Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION)
+        solid = Gtk.CssProvider()
+        solid.load_from_data(SOLID_CSS)
+        Gtk.StyleContext.add_provider_for_display(Gdk.Display.get_default(), solid, Gtk.STYLE_PROVIDER_PRIORITY_USER + 1)
 
     def do_activate(self):
         win = self.props.active_window or Setup(self)

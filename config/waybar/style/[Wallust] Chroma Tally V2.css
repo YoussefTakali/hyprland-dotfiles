@@ -273,3 +273,9 @@ tooltip {
     border-radius: 5px;
     background-color: @color6; /* Lighter highlight */
 }
+
+/* >>> ULTIMATE PACK: glass + legibility (added 2026-11-09). Delete this block to restore the original look. */
+/* A 38% tint is just above Hyprland's ignore_alpha 0.3 for waybar, so the bar gets real blur behind it. */
+window#waybar { background-color: rgba(12, 12, 18, 0.38); }
+label, #workspaces button { text-shadow: 0 1px 2px rgba(0, 0, 0, 0.65); }
+/* <<< ULTIMATE PACK */

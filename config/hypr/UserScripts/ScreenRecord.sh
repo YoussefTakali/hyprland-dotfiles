@@ -2,6 +2,11 @@
 # Screen recorder (wf-recorder). Usage: ScreenRecord.sh --toggle|--full|--area|--full-audio|--area-audio|--stop|--status
 # --toggle stops a running recording, otherwise opens a small rofi menu to pick a mode.
 # --status prints Waybar JSON (empty text = module hidden).
+pkg_hint() {  # pkg_hint <arch pkgs> <fedora pkgs> <ubuntu pkgs>  -> the install command for this distro
+    if command -v pacman >/dev/null; then echo "sudo pacman -S $1"
+    elif command -v apt-get >/dev/null; then echo "sudo apt install $3"
+    else echo "sudo dnf install $2"; fi
+}
 
 DIR="$HOME/Videos/Recordings"
 STATE="${XDG_RUNTIME_DIR:-/tmp}/screenrecord"   # holds "<pid> <start epoch> <file>"
@@ -32,7 +37,7 @@ stop() {
 start() {   # $1 = full|area, $2 = audio|""
     running && { stop; return; }
     if ! command -v wf-recorder >/dev/null; then
-        notify-send -u critical "Screen recorder" "wf-recorder isn't installed.\nRun: sudo dnf install wf-recorder"
+        notify-send -u critical "Screen recorder" "wf-recorder isn't installed.\nRun: $(pkg_hint wf-recorder wf-recorder wf-recorder)"
         exit 1
     fi
     mkdir -p "$DIR"

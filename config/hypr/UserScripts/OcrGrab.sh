@@ -1,7 +1,12 @@
 #!/usr/bin/env bash
 # Select an area of the screen; the text in it goes to the clipboard (tesseract OCR).
+pkg_hint() {  # pkg_hint <arch pkgs> <fedora pkgs> <ubuntu pkgs>  -> the install command for this distro
+    if command -v pacman >/dev/null; then echo "sudo pacman -S $1"
+    elif command -v apt-get >/dev/null; then echo "sudo apt install $3"
+    else echo "sudo dnf install $2"; fi
+}
 if ! command -v tesseract >/dev/null; then
-    notify-send -u critical "Text grab" "tesseract isn't installed.\nRun: sudo dnf install tesseract tesseract-langpack-eng"
+    notify-send -u critical "Text grab" "tesseract isn't installed.\nRun: $(pkg_hint 'tesseract tesseract-data-eng' 'tesseract tesseract-langpack-eng' 'tesseract-ocr tesseract-ocr-eng')"
     exit 1
 fi
 geo=$(slurp -d) || exit 0

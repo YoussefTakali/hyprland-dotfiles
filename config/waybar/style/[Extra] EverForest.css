@@ -74,7 +74,7 @@ window#waybar.hidden {
 
 #custom-menu,
 #custom-arch {
-  background-color: @bg;
+  background-color: @black;
   color: @red;
 }
 

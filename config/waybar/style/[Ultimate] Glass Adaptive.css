@@ -1,0 +1,113 @@
+/* ULTIMATE pack - Glass Adaptive (horizontal bar)
+   TEMPLATE: ~/.config/hypr/UserScripts/ThemeSwitch.sh renders this into "[Ultimate] Glass Adaptive.css",
+   filling in the radius / transparency of the current theme. Edit THIS file, not the rendered one.
+   Colours: wallust (follow the wallpaper) + readable.css (AccentGuard: lightened until readable).
+   Blur behind the bar comes from the Hyprland layerrule "waybar, blur on". */
+
+@import "../waybar/wallust/colors-waybar.css";
+@import "../waybar/wallust/readable.css";
+
+* {
+  font-family: "JetBrainsMono Nerd Font";
+  font-weight: bold;
+  font-size: 97%;
+  min-height: 0;
+  border: none;
+  box-shadow: none;
+  text-shadow: none;
+}
+
+/* ── the bar: frosted glass island ─────────────────────────────── */
+window#waybar {
+  background: alpha(@background, 0.55);
+  border: 1px solid alpha(@r13, 0.35);
+  border-radius: 14px;
+  color: @foreground;
+  transition: background 0.3s ease;
+}
+window#waybar.hidden { opacity: 0.2; }
+
+tooltip {
+  background: alpha(@background, 0.96);
+  border: 1px solid alpha(@r13, 0.6);
+  border-radius: 10px;
+}
+tooltip label { color: @foreground; padding: 2px 4px; }
+
+/* ── every module / group is a soft pill ───────────────────────── */
+.modules-left > widget > *,
+.modules-center > widget > *,
+.modules-right > widget > * {
+  background: alpha(@foreground, 0.06);
+  border-radius: 10px;
+  margin: 4px 2px;
+  padding: 0 9px;
+  color: @foreground;
+  transition: background 0.2s ease, color 0.2s ease;
+}
+.modules-left > widget:first-child > * { margin-left: 6px; }
+.modules-right > widget:last-child > * { margin-right: 6px; }
+
+.modules-left > widget > *:hover,
+.modules-center > widget > *:hover,
+.modules-right > widget > *:hover { background: alpha(@r13, 0.18); }
+
+/* separators and empty modules: invisible */
+.modules-left > widget > #custom-separator,
+.modules-center > widget > #custom-separator,
+.modules-right > widget > #custom-separator {
+  background: transparent; color: transparent;   /* pills already separate modules */
+  padding: 0; margin: 0 1px; min-width: 2px;
+}
+#window:not(.empty), #custom-playerctl { padding: 0 12px; }
+window#waybar.empty #window { background: transparent; padding: 0; margin: 0; }
+
+/* ── workspaces ────────────────────────────────────────────────── */
+#workspaces { padding: 0 3px; }
+#workspaces button {
+  color: alpha(@foreground, 0.45);
+  background: transparent;
+  border-radius: 10px;
+  padding: 0 6px;
+  margin: 3px 1px;
+  transition: all 0.25s cubic-bezier(0.05, 0.7, 0.1, 1);
+}
+#workspaces button.active {
+  color: @background;
+  background: @r13;
+  padding: 0 14px;               /* end-4 style: the active workspace stretches */
+}
+#workspaces button.urgent { color: @background; background: @color1; }
+#workspaces button:hover  { color: @foreground; background: alpha(@r13, 0.25); }
+
+/* ── per-module accents (wallpaper colours) ────────────────────── */
+#clock                         { color: @r13; }
+#custom-weather                { color: @r14; }
+#custom-playerctl, #custom-cava_mviz { color: @r15; }
+#window                        { color: alpha(@foreground, 0.8); }
+#network, #network.wifi        { color: @r12; }
+#bluetooth                     { color: @r11; }
+#bluetooth.connected           { color: @r13; }
+#pulseaudio                    { color: @r7; }
+#pulseaudio.microphone         { color: @r9; }
+#cpu, #custom-gpu              { color: @r9; }
+#memory, #disk                 { color: @r10; }
+#temperature                   { color: @r14; }
+#power-profiles-daemon         { color: @r12; }
+#custom-clipboard              { color: @r9; }
+#custom-nightlight             { color: @r15; }
+#custom-swaync                 { color: @r12; }
+#custom-menu                   { color: @r13; }
+#custom-power                  { color: @r10; }
+#custom-lock, #custom-keyboard { color: @r15; }
+
+/* ── states: red / yellow keep their meaning ───────────────────── */
+#pulseaudio.muted, #pulseaudio.source-muted { color: alpha(@foreground, 0.35); }
+#temperature.critical, #custom-recorder, #privacy-item {
+  color: @background;
+  background: #f38ba8;
+}
+#network.disconnected, #bluetooth.disabled { color: alpha(@foreground, 0.35); }
+#idle_inhibitor.activated { color: @background; background: @r12; }
+#power-profiles-daemon.performance { color: #f9e2af; }
+#tray > .needs-attention { background: alpha(#f38ba8, 0.4); border-radius: 10px; }

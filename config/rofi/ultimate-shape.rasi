@@ -1,0 +1,4 @@
+/* written by ThemeSwitch.sh - rounded corners matching the Hyprland theme */
+window   { border-radius: 16px; }
+inputbar { border-radius: 10px; }
+element  { border-radius: 10px; }

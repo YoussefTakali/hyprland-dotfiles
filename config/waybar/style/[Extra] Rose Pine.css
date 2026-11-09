@@ -82,14 +82,14 @@ tooltip {
 	border-radius: 10px;
     padding-left: 3px;
     padding-right: 3px;
-    color: @wb-color;
+    color: @main-fg;
     animation: gradient_f 20s ease-in infinite;
     transition: all 0.5s cubic-bezier(.55,-0.68,.48,1.682);
 }
 
 #taskbar button.active {
     background: @wb-act-bg;
-    color: @wb-act-color;
+    color: @wb-act-fg;
     padding-left: 8px;
     padding-right: 8px;
     animation: gradient_f 20s ease-in infinite;
@@ -98,7 +98,7 @@ tooltip {
 
 #taskbar button:hover {
     background: @wb-hvr-bg;
-    color: @wb-hvr-color;
+    color: @wb-hvr-fg;
     padding-left: 3px;
     padding-right: 3px;
     animation: gradient_f 20s ease-in infinite;

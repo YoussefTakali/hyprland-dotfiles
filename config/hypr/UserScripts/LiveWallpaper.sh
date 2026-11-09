@@ -48,7 +48,7 @@ case "${1:-}" in
     *)
         v=$(realpath "$1")
         if ! command -v mpvpaper >/dev/null; then
-            notify-send -u critical "Live wallpaper" "mpvpaper isn't installed.\nRun: sudo dnf copr enable sdegler/hyprland && sudo dnf install mpvpaper"
+            notify-send -u critical "Live wallpaper" "mpvpaper isn't installed.\n$(command -v pacman >/dev/null && echo 'Run: yay -S mpvpaper' || { command -v apt-get >/dev/null && echo 'Run the desktop installer again (it builds mpvpaper)' || echo 'Run: sudo dnf copr enable sdegler/hyprland && sudo dnf install mpvpaper'; })"
             exit 1
         fi
         play "$v"

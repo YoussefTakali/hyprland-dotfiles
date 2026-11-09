@@ -21,3 +21,6 @@
 
 
 @theme "~/.config/rofi/themes/KooL_utilities.rasi"
+
+/* Ultimate pack: corner radius follows the Hyprland theme (written by ThemeSwitch.sh). Keep below @theme. */
+@import "~/.config/rofi/ultimate-shape.rasi"
