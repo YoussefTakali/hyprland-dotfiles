@@ -1,3 +1,12 @@
 #!/usr/bin/env bash
-# Start the graphical installer (Desktop Setup).
-cd "$(dirname "$0")" && exec python3 -I installer/setup.py "$@"
+# Start the graphical installer (Desktop Setup). Works on Arch, Fedora and Ubuntu 26.04+.
+# On a fresh system the installer's own GTK4/libadwaita bindings may be missing: install them first.
+cd "$(dirname "$0")" || exit 1
+if ! python3 -I -c 'import gi; gi.require_version("Gtk","4.0"); gi.require_version("Adw","1"); from gi.repository import Gtk, Adw' 2>/dev/null; then
+    echo "Installing what the graphical installer needs (GTK4 + libadwaita for Python)…"
+    if   command -v pacman  >/dev/null; then sudo pacman -S --needed --noconfirm python-gobject gtk4 libadwaita
+    elif command -v dnf     >/dev/null; then sudo dnf install -y python3-gobject gtk4 libadwaita
+    elif command -v apt-get >/dev/null; then sudo apt-get install -y python3-gi gir1.2-gtk-4.0 gir1.2-adw-1
+    fi || { echo "Couldn't install them; use ./install.sh (terminal installer) instead."; exit 1; }
+fi
+exec python3 -I installer/setup.py "$@"

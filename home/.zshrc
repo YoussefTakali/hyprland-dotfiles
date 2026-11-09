@@ -7,15 +7,12 @@ ZSH_THEME="agnosterzak-mocha"
 
 plugins=( 
     git
-    dnf
     zsh-autosuggestions
     zsh-syntax-highlighting
 )
 
 source $ZSH/oh-my-zsh.sh
 
-# check the dnf plugins commands here
-# https://github.com/ohmyzsh/ohmyzsh/tree/master/plugins/dnf
 
 
 # Display Pokemon-colorscripts
@@ -27,7 +24,7 @@ source $ZSH/oh-my-zsh.sh
 if [[ $TERM == xterm-kitty ]] && _ff_logo=$("$HOME/.config/fastfetch/wall-logo.sh"); then
     fastfetch -c "$HOME/.config/fastfetch/config-wall.jsonc" --logo-type kitty-direct --logo "$_ff_logo"
 else
-    fastfetch -c "$HOME/.config/fastfetch/config-wall.jsonc" --logo-type builtin --logo fedora_small
+    fastfetch -c "$HOME/.config/fastfetch/config-wall.jsonc" --logo-type builtin --logo "$(. /etc/os-release; echo "${ID}_small")"
 fi
 unset _ff_logo
 
