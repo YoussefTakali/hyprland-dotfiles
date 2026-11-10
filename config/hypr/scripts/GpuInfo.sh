@@ -12,10 +12,14 @@
 #   SECURE_BOOT    1 / 0 / ? (signed modules needed when 1)
 set -u
 
+# GPUINFO_SYSROOT=<dir>: read a fake sysfs tree under <dir>/sys instead of /sys (tests the installer's GPU
+# handling for hardware the test machine doesn't have)
+R=${GPUINFO_SYSROOT:-}
+
 declare -A VENDOR=( [0x10de]=nvidia [0x1002]=amd [0x8086]=intel )
 gpus=() ; declare -A pci render boot
-for card in /sys/class/drm/card[0-9]*; do
-    [[ "$card" == *-* ]] && continue
+for card in "$R"/sys/class/drm/card[0-9]*; do
+    [[ "$(basename "$card")" == *-* ]] && continue    # connectors (card0-eDP-1), not GPUs
     v=$(cat "$card/device/vendor" 2>/dev/null) || continue
     name=${VENDOR[$v]:-}
     [[ -z "$name" ]] && continue
@@ -35,7 +39,7 @@ va_of() {
         amd) echo radeonsi ;;
         intel)
             # Broadwell (gen 8) and newer use iHD (intel-media-driver); older ones i965
-            local dev; dev=$(cat "/sys/bus/pci/devices/${pci[intel]}/device" 2>/dev/null)
+            local dev; dev=$(cat "$R/sys/bus/pci/devices/${pci[intel]}/device" 2>/dev/null)
             if [[ -n "$dev" ]] && (( dev < 0x1600 )); then echo i965; else echo iHD; fi ;;
     esac
 }
@@ -53,12 +57,12 @@ display=""
 for g in "${gpus[@]}"; do [[ "${boot[$g]}" == 1 ]] && display=$g; done
 [[ -z "$display" ]] && display=${igpu:-${gpus[0]:-}}
 
-nv_ver=$(cat /sys/module/nvidia/version 2>/dev/null || true)
+nv_ver=$(cat "$R/sys/module/nvidia/version" 2>/dev/null || true)
 nv_open=0
 [[ -n "$nv_ver" ]] && modinfo -F license nvidia 2>/dev/null | grep -q "MIT" && nv_open=1
 nv_arch=""
 if has nvidia; then
-    dev=$(cat "/sys/bus/pci/devices/${pci[nvidia]}/device" 2>/dev/null)
+    dev=$(cat "$R/sys/bus/pci/devices/${pci[nvidia]}/device" 2>/dev/null)
     # Turing (TU1xx, device ids from 0x1e00) and newer run the open kernel modules
     if [[ -n "$dev" ]] && (( dev >= 0x1e00 )); then nv_arch=turing+; else nv_arch=legacy; fi
 fi
