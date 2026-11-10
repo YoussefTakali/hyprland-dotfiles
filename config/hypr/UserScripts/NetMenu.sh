@@ -119,11 +119,45 @@ wifi_connect() {
     else notify-send -u critical -a "Wi-Fi" "Couldn't connect to $ssid" "$out"; fi
 }
 
+# bluetoothctl exits 0 even when power on/connect fail, so every action below checks the real state afterwards.
+# A dual-mode headset (classic + LE) can be linked over LE only, for its battery level, with no sound; audio
+# devices count as connected only when the classic (BR/EDR) link that carries the sound is up.
+bt_connected() {
+    local info; info=$(bluetoothctl info "$1")
+    if grep -q "Icon: audio-" <<<"$info" && grep -q "BREDR.Connected:" <<<"$info"; then
+        grep -q "BREDR.Connected: yes" <<<"$info"
+    else
+        grep -qE "^\s*Connected: yes" <<<"$info"
+    fi
+}
+bt_wait() {   # bt_wait <mac> yes|no   wait up to 12 s for that state
+    local _; for _ in {1..24}; do
+        if bt_connected "$1"; then [[ $2 == yes ]] && return 0; else [[ $2 == no ]] && return 0; fi
+        sleep 0.5
+    done; return 1
+}
+bt_powered() { [[ $(bluetoothctl show | awk '/Powered:/ {print $2; exit}') == yes ]]; }
+bt_power() {  # bt_power on|off   switch and confirm
+    local _ want=no; [[ $1 == on ]] && want=yes
+    bluetoothctl power "$1" >/dev/null 2>&1
+    for _ in {1..15}; do [[ $(bluetoothctl show | awk '/Powered:/ {print $2; exit}') == "$want" ]] && return 0; sleep 0.3; done
+    return 1
+}
+bt_why() {    # turn bluetoothctl's error into something useful
+    case "$1" in
+        *page-timeout*|*"Host is down"*|*"No route to host"*|*"Page Timeout"*)
+            echo "The device is off, out of range, or connected to another device (a phone?)." ;;
+        *NotReady*|*"not powered"*|*NotAvailable*) echo "Bluetooth is off." ;;
+        *) grep -m1 -oE "Failed to [a-z]+: .*" <<<"$1" || echo "No answer from the device." ;;
+    esac
+}
+
 bluetooth() {
     local powered rows=() macs=() mac name i
-    powered=$(bluetoothctl show | awk '/Powered:/ {print $2; exit}')
-    if [[ $powered != yes ]]; then
-        [[ $(printf '󰂯  Turn Bluetooth on\n' | menu "Bluetooth") ]] && bluetoothctl power on >/dev/null && notify-send -a "Bluetooth" "Bluetooth on"
+    if ! bt_powered; then
+        [[ $(printf '󰂯  Turn Bluetooth on\n' | menu "Bluetooth") ]] || return
+        if bt_power on; then notify-send -a "Bluetooth" "Bluetooth on"; bluetooth
+        else notify-send -u critical -a "Bluetooth" "Couldn't turn Bluetooth on" "Check that it isn't blocked: rfkill list"; fi
         return
     fi
     rows+=("󰂲  Turn Bluetooth off") macs+=("__off")
@@ -133,7 +167,7 @@ bluetooth() {
         [[ -z "$mac" ]] && continue
         local info batt="" state="" icon="󰂯"
         info=$(bluetoothctl info "$mac")
-        if grep -q "Connected: yes" <<<"$info"; then
+        if bt_connected "$mac"; then
             state="   󰄬 connected"; icon="󰂱"
             b=$(awk -F'[()]' '/Battery Percentage/ {print $2}' <<<"$info")
             [[ -n "$b" ]] && batt="  󰥉 ${b}%"
@@ -150,7 +184,8 @@ bluetooth() {
     i=$(printf '%s\n' "${rows[@]}" | menu "Bluetooth" -format i) || return
     [[ -z "$i" ]] && return
     case "${macs[$i]}" in
-        __off)  bluetoothctl power off >/dev/null && notify-send -a "Bluetooth" "Bluetooth off" ;;
+        __off)  if bt_power off; then notify-send -a "Bluetooth" "Bluetooth off"
+                else notify-send -u critical -a "Bluetooth" "Couldn't turn Bluetooth off"; fi ;;
         __pair)     bt_pair ;;
         __settings) blueman-manager >/dev/null 2>&1 & ;;
         *)          bt_device "${macs[$i]}" "${rows[$i]}" ;;
@@ -160,18 +195,29 @@ bluetooth() {
 # Actions for one paired device: connect / disconnect, send a file, remove
 bt_device() {
     local mac=$1 label=$2 acts=() keys=() i connected=""
-    bluetoothctl info "$mac" | grep -q "Connected: yes" && connected=1
+    bt_connected "$mac" && connected=1
     if [[ -n $connected ]]; then acts+=("󰂲  Disconnect") keys+=(down)
     else acts+=("󰂱  Connect") keys+=(up); fi
     acts+=("󰕒  Send a file…") keys+=(send)
     acts+=("󰩺  Remove device") keys+=(remove)
     i=$(printf '%s\n' "${acts[@]}" | menu "${label%%   *}" -format i) || return
     case "${keys[$i]}" in
-        down)   bluetoothctl disconnect "$mac" >/dev/null && notify-send -a "Bluetooth" "Disconnected" "$label" ;;
+        down)
+            bluetoothctl disconnect "$mac" >/dev/null 2>&1
+            if bt_wait "$mac" no; then notify-send -a "Bluetooth" "Disconnected" "${label%%   *}"
+            else notify-send -u critical -a "Bluetooth" "Couldn't disconnect" "${label%%   *}"; fi ;;
         up)
-            notify-send -a "Bluetooth" -t 1500 "Connecting…"
-            if bluetoothctl connect "$mac" >/dev/null 2>&1; then notify-send -a "Bluetooth" "Connected" "$label"
-            else notify-send -u critical -a "Bluetooth" "Couldn't connect" "$label"; fi ;;
+            local out
+            notify-send -a "Bluetooth" -t 2000 "Connecting…" "${label%%   *}"
+            out=$(timeout 20 bluetoothctl connect "$mac" 2>&1)
+            if ! bt_wait "$mac" yes && ! bt_connected "$mac"; then
+                # linked over LE only: drop that link and ask again, so the audio link is made
+                bluetoothctl disconnect "$mac" >/dev/null 2>&1; sleep 1
+                out=$(timeout 20 bluetoothctl connect "$mac" 2>&1)
+                bt_wait "$mac" yes
+            fi
+            if bt_connected "$mac"; then notify-send -a "Bluetooth" "Connected" "${label%%   *}"
+            else notify-send -u critical -a "Bluetooth" "Couldn't connect" "${label%%   *}: $(bt_why "$out")"; fi ;;
         send)   blueman-sendto --device="$mac" >/dev/null 2>&1 & ;;
         remove)
             [[ $(printf '%s\n' "󰩺  Yes, remove it" "Cancel" | menu "Remove?") == *Yes* ]] || return
@@ -194,11 +240,14 @@ bt_pair() {
     i=$(printf '%s\n' "${rows[@]}" | menu "Pair" -format i) || return
     mac=${macs[$i]}
     notify-send -a "Bluetooth" -t 3000 "Pairing…" "${rows[$i]}"
-    if bluetoothctl pair "$mac" >/dev/null 2>&1 && bluetoothctl trust "$mac" >/dev/null 2>&1; then
-        bluetoothctl connect "$mac" >/dev/null 2>&1
-        notify-send -a "Bluetooth" "Paired" "${rows[$i]}"
+    local out; out=$(timeout 30 bluetoothctl pair "$mac" 2>&1)
+    if bluetoothctl info "$mac" | grep -q "Paired: yes"; then
+        bluetoothctl trust "$mac" >/dev/null 2>&1
+        timeout 20 bluetoothctl connect "$mac" >/dev/null 2>&1
+        if bt_wait "$mac" yes; then notify-send -a "Bluetooth" "Paired and connected" "${rows[$i]}"
+        else notify-send -a "Bluetooth" "Paired, but not connected yet" "${rows[$i]}: pick it in the Bluetooth menu to connect"; fi
     else
-        notify-send -u critical -a "Bluetooth" "Pairing failed" "Try again, or use Bluetooth settings"
+        notify-send -u critical -a "Bluetooth" "Pairing failed" "$(bt_why "$out")"
     fi
 }
 
