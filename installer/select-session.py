@@ -7,7 +7,23 @@ import os
 from pathlib import Path
 import pwd
 import shutil
-import sys
+import tempfile
+
+def write_config(path, config, owner=None):
+    path.parent.mkdir(parents=True, exist_ok=True)
+    with tempfile.NamedTemporaryFile(mode="w", dir=path.parent, delete=False) as stream:
+        temporary = Path(stream.name)
+        try:
+            config.write(stream, space_around_delimiters=False)
+            stream.flush()
+            if path.exists():
+                shutil.copymode(path, temporary)
+            if owner is not None:
+                os.chown(temporary, owner.pw_uid, owner.pw_gid)
+            os.replace(temporary, path)
+        finally:
+            temporary.unlink(missing_ok=True)
+
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__)
@@ -31,9 +47,7 @@ if __name__ == "__main__":
         config.add_section("User")
     config.set("User", "Session", args.session)
     config.set("User", "XSession", args.session)
-    path.parent.mkdir(parents=True, exist_ok=True)
-    with path.open("w") as stream:
-        config.write(stream, space_around_delimiters=False)
+    write_config(path, config)
     # "Keep login screen" may mean an existing SDDM installation rather than GDM.
     manager = Path('/etc/systemd/system/display-manager.service')
     if manager.resolve().name == 'sddm.service':

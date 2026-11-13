@@ -197,9 +197,9 @@ healthy. `nvidia-powerd` also reports an unsupported system, independently of
 the compositor startup. Do not disable it generically: supported laptops may
 need it.
 
-The shared `repair-desktop-login.sh` used to force a PCI address from the
+An earlier login repair forced a PCI address from the
 original PC and NVIDIA libraries for every user, including non-NVIDIA systems.
-Both installer entry points invoke that repair. It now removes the exact old
+Both installer entry points run the migration, which removes the exact old
 managed block, preserves surrounding user settings, and regenerates GPU.conf
 using the detected display GPU. Both installers explicitly request swww and
 Pillow and check that swww exists. After a successful first wallpaper submission,

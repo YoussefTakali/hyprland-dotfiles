@@ -10,6 +10,9 @@ REPO = Path(__file__).resolve().parents[1]
 SPEC = importlib.util.spec_from_file_location("login_themes", REPO / "config/hypr/scripts/LoginThemes.py")
 login_themes = importlib.util.module_from_spec(SPEC)
 SPEC.loader.exec_module(login_themes)
+SPEC = importlib.util.spec_from_file_location("greeter", REPO / "installer/session/repair-greeter-handoff.py")
+greeter = importlib.util.module_from_spec(SPEC)
+SPEC.loader.exec_module(greeter)
 
 
 class LoginThemesTests(unittest.TestCase):
@@ -23,13 +26,23 @@ class LoginThemesTests(unittest.TestCase):
             for name in ("Themes", "Backgrounds", "Components"):
                 (theme / name).mkdir(parents=True)
             (theme / "Themes/jake_the_dog.conf").write_text("[General]\n")
-            (theme / "Main.qml").touch()
-            (theme / "Components/Input.qml").touch()
+            main = theme / "Main.qml"
+            main.write_text("Item {\n    focus: true\n}\n")
+            fields = theme / "Components/Input.qml"
+            fields.write_text("    function triggerLogin() {\n"
+                              "        sddm.login(targetUser, password.text, sessionSelect.selectedSession)\n"
+                              "        function onLoginFailed() {\n")
+            (theme / "metadata.desktop").write_text("ConfigFile=Themes/old.conf\n")
             video = theme / "Backgrounds/jake_the_dog.mp4"
             poster = theme / "Backgrounds/jake_the_dog.png"
             video.write_bytes(b"stock video")
             poster.write_bytes(b"stock poster")
 
+            greeter.prepare_theme(theme)
+            self.assertIn("JakeLoadingScene {", main.read_text())
+            self.assertIn("root.startLoading()", fields.read_text())
+            self.assertIn("root.stopLoading()", fields.read_text())
+            self.assertEqual((theme / "Components/jake.png").read_bytes(), poster.read_bytes())
             with patch.object(login_themes, "THEME", theme), patch.object(login_themes, "commit") as commit:
                 login_themes.system_install(assets)
             changes = commit.call_args.args[0]

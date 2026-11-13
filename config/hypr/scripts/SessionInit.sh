@@ -18,7 +18,7 @@ systemctl --user start hyprland-dotfiles-session.target
 [[ ${1:-} != --prepare-only ]] || exit 0
 # Start the notification center with its systemd theme override and imported display environment.
 if command -v swaync >/dev/null; then
-    if ! systemctl --user start --no-block swaync.service 2>/dev/null; then
+    if ! systemctl --user start swaync.service 2>/dev/null; then
         swaync 9>&- &
     fi
 fi

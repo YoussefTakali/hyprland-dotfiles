@@ -132,7 +132,8 @@ def patch_login_theme(main, fields):
         loading = '''
     // One visual scene spans authentication and desktop startup.
     property bool unifiedLoading: false
-    function startLoading() { unifiedLoading = true; }
+    function startLoading() { player.pause(); unifiedLoading = true; }
+    function stopLoading() { unifiedLoading = false; player.play(); }
     JakeLoadingScene {
         anchors.fill: parent
         z: 1000
@@ -150,9 +151,27 @@ def patch_login_theme(main, fields):
         fields = fields.replace('    function triggerLogin() {\n',
                                 '    function triggerLogin() {\n        if (root.unifiedLoading) return\n', 1)
         fields = fields.replace(anchor, '        root.startLoading()\n' + anchor, 1)
-        fields = fields.replace(failed, failed + '            root.unifiedLoading = false\n', 1)
+        fields = fields.replace(failed, failed + '            root.stopLoading()\n', 1)
     return main, fields
 
+
+def prepare_theme(theme):
+    """Install the loading scene independently of an exported transition frame."""
+    scene = Path(__file__).resolve().parents[2] / 'config/quickshell/login-splash'
+    components = theme / 'Components'
+    poster = theme / 'Backgrounds/jake_the_dog.png'
+    if not poster.is_file():
+        raise RuntimeError('SDDM Astronaut is missing the default Jake poster.')
+    main = theme / 'Main.qml'
+    fields = components / 'Input.qml'
+    main_text, fields_text = patch_login_theme(main.read_text(), fields.read_text())
+    main.write_text(main_text)
+    fields.write_text(fields_text)
+    shutil.copyfile(scene / 'JakeLoadingScene.qml', components / 'JakeLoadingScene.qml')
+    shutil.copyfile(poster, components / 'jake.png')
+    metadata = theme / 'metadata.desktop'
+    metadata.write_text(re.sub(r'^ConfigFile=.*$', 'ConfigFile=Themes/jake_the_dog.conf',
+                               metadata.read_text(), flags=re.M))
 
 def apply_backdrop():
     if os.geteuid() != 0:
@@ -170,7 +189,7 @@ def apply_backdrop():
     if not data.startswith(b'\x89PNG\r\n\x1a\n'):
         raise SystemExit('Jake artwork must be a PNG image.')
     changes = {wallpaper: data}
-    if shared_frame.is_file():
+    if artwork.is_file():
         theme = artwork.parents[1]
         main = theme / 'Main.qml'
         fields = theme / 'Components/Input.qml'
@@ -242,8 +261,11 @@ if __name__ == '__main__':
     group.add_argument('--restore', type=Path)
     group.add_argument('--fix-locale', action='store_true')
     group.add_argument('--jake-backdrop', action='store_true')
+    group.add_argument('--prepare-theme', type=Path)
     args = parser.parse_args()
-    if args.jake_backdrop: apply_backdrop()
+    if args.prepare_theme:
+        prepare_theme(args.prepare_theme)
+    elif args.jake_backdrop: apply_backdrop()
     elif args.fix_locale: fix_locale()
     elif args.apply: apply(args.apply.resolve())
     elif args.restore: restore(args.restore.resolve())

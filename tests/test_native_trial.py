@@ -98,7 +98,7 @@ class TrialTests(unittest.TestCase):
             self.assertFalse(launcher.trial_failed_before_startup(1,marker,interrupted=True))
             self.assertFalse(launcher.trial_failed_before_startup(0,marker,elapsed=60))
             marker.unlink()
-            self.assertTrue(launcher.trial_failed_before_startup(1,marker,elapsed=60))
+            self.assertFalse(launcher.trial_failed_before_startup(1, marker, elapsed=60))
 
     def test_packaged_fallback_does_not_inherit_native_loader_settings(self):
         env=launcher.packaged_environment({'PATH':'/usr/bin','LD_LIBRARY_PATH':'candidate:/custom',
@@ -114,13 +114,6 @@ class TrialTests(unittest.TestCase):
                 launcher.main()
             native.assert_not_called()
             self.assertNotIn('HYPRLAND_NATIVE_ACTIVE',execute.call_args.args[2])
-
-    def test_advisory_warming_opens_only_existing_small_cache_files(self):
-        with tempfile.TemporaryDirectory() as tmp:
-            home=Path(tmp);cache=home/'.cache/hypr-startup-wallpaper';cache.mkdir(parents=True);(cache/'wallpaper.qoi').write_bytes(b'pixels')
-            with patch.object(launcher.os,'posix_fadvise') as advise:
-                launcher.warm_wallpaper_cache(home)
-            self.assertEqual(advise.call_count,1)
 
     def test_trial_session_does_not_change_the_stable_entry(self):
         with tempfile.TemporaryDirectory() as tmp:

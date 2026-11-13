@@ -157,7 +157,7 @@ d_extras() {
 }
 
 d_sddm() {
-    apt_install sddm qml6-module-qtquick-virtualkeyboard qt6-virtualkeyboard-plugin qml6-module-qtmultimedia qt6-svg-plugins \
+    apt_install sddm xserver-xorg-core xserver-xorg-input-libinput qml6-module-qtquick-virtualkeyboard qt6-virtualkeyboard-plugin qml6-module-qtmultimedia qt6-svg-plugins \
         || fail "Couldn't install SDDM."
     echo /usr/bin/sddm | sudo tee /etc/X11/default-display-manager >/dev/null
 }

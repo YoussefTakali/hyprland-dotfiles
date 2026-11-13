@@ -42,49 +42,7 @@ d_base() {
 }
 
 d_drivers() {
-    case " $GPUS " in *" intel "*)
-        [[ "${INTEL_VA:-}" == i965 ]] && run sudo dnf install -y libva-intel-driver || run sudo dnf install -y intel-media-driver
-        ;; esac
-    case " $GPUS " in *" amd "*)
-        # Fedora's Mesa can't hardware-decode H.264/HEVC (patents); RPM Fusion's "freeworld" build can
-        rpm -q mesa-va-drivers-freeworld >/dev/null || run sudo dnf swap -y mesa-va-drivers mesa-va-drivers-freeworld \
-            || warn "AMD video decoding drivers not installed; videos will decode on the CPU."
-        ;; esac
-    case " $GPUS " in *" nvidia "*)
-        if [[ -n "$NVIDIA_DRIVER" ]] || rpm -q akmod-nvidia >/dev/null 2>&1; then
-            echo "NVIDIA driver already installed (${NVIDIA_DRIVER:-installed, loads after reboot})."
-            return
-        fi
-        local pkgs=(akmod-nvidia xorg-x11-drv-nvidia-cuda xorg-x11-drv-nvidia-power libva-nvidia-driver)
-        if [[ "$NVIDIA_ARCH" == legacy ]]; then
-            if dnf list -q --available akmod-nvidia-580xx >/dev/null 2>&1; then
-                pkgs=(akmod-nvidia-580xx xorg-x11-drv-nvidia-580xx-cuda xorg-x11-drv-nvidia-580xx-power libva-nvidia-driver)
-            else
-                warn "This NVIDIA card is older than the cards the current driver supports; installing the current driver anyway."
-            fi
-        fi
-        run sudo dnf install -y "${pkgs[@]}" || fail "Couldn't install the NVIDIA driver."
-        sub 30
-        if [[ "$SECURE_BOOT" == 1 ]]; then
-            # The driver is built on this PC, so it must be signed with a key the firmware trusts
-            run sudo kmodgenca -a
-            if [[ -n "$OPT_MOK_PASSWORD" ]]; then
-                local h; h=$(mktemp); mokutil --generate-hash="$OPT_MOK_PASSWORD" > "$h"
-                run sudo mokutil --import /etc/pki/akmods/certs/public_key.der --hash-file "$h" \
-                    && note "SECURE_BOOT_KEY" || warn "Couldn't queue the driver key for Secure Boot."
-                rm -f "$h"
-            else
-                warn "Secure Boot is on but no key password was given: the NVIDIA driver won't load until its key is approved."
-            fi
-        fi
-        echo "Building the NVIDIA driver for this kernel (a few minutes)…"
-        run sudo akmods --force --kernels "$(uname -r)" || true
-        modinfo -k "$(uname -r)" nvidia >/dev/null 2>&1 || fail "The NVIDIA driver didn't build for this kernel (see the log)."
-        sub 80
-        run sudo grubby --update-kernel=ALL --args="rd.driver.blacklist=nouveau modprobe.blacklist=nouveau nvidia-drm.modeset=1 nvidia-drm.fbdev=1"
-        run sudo systemctl enable nvidia-suspend.service nvidia-resume.service nvidia-hibernate.service || true
-        note "NVIDIA_INSTALLED"
-        ;; esac
+    python3 "$HERE/installer/gpu-setup.py" --install || fail "Graphics setup failed; see the specific error above."
 }
 
 d_extras() {
@@ -97,6 +55,6 @@ d_extras() {
 }
 
 d_sddm() {
-    run sudo dnf install -y sddm qt6-qtsvg qt6-qtvirtualkeyboard qt6-qtmultimedia || fail "Couldn't install SDDM."
+    run sudo dnf install -y --allowerasing sddm-x11 xorg-x11-server-Xorg qt6-qtdeclarative qt6-qtsvg qt6-qtvirtualkeyboard qt6-qtmultimedia || fail "Couldn't install SDDM."
 }
 DM_OTHERS=(gdm lightdm)

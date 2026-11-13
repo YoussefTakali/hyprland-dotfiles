@@ -90,7 +90,8 @@ Run `~/.config/hypr/scripts/GpuInfo.sh` to see your detected setup.
 ### Graphical Installer (recommended)
 
 ```sh
-cd /path/to/this/hyprland-dotfiles-fixed
+git clone https://github.com/YoussefTakali/hyprland-dotfiles.git
+cd hyprland-dotfiles
 ./setup
 ```
 

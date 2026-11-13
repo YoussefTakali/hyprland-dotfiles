@@ -46,9 +46,6 @@ class InstallerPaths(unittest.TestCase):
             profile = home / '.mozilla/firefox/test.default-release'
             profile.mkdir(parents=True)
             (profile / 'user.js').write_text('// previous preferences\n')
-            theme = home / '.cache/sddm-astronaut-repair/Themes'
-            theme.mkdir(parents=True)
-            (theme / 'jake_the_dog.conf').touch()
             # A loaded NVIDIA fixture makes this test independent of host GPUs.
             sysfs = home / 'sys'
             device = sysfs / 'bus/pci/devices/0000:99:00.0'
@@ -91,7 +88,8 @@ class InstallerPaths(unittest.TestCase):
                 self.assertEqual((home/'.config/waybar/config').resolve().name, '[TOP] Liquid Glass V3')
             else:
                 self.assertIn('Preserving loaded NVIDIA driver', result.stdout)
-                self.assertIn('--system', boundaries)
+                self.assertIn('installer/session/install-sddm.sh', boundaries)
+                self.assertIn('installer/select-session.py', boundaries)
 
     def test_terminal_entry_point_and_gdm_selection(self):
         self.exercise(True)

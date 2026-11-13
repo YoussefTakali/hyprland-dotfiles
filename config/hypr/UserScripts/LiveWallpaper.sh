@@ -31,7 +31,8 @@ check_video() {
 play() {
     # Fail before stopping a working wallpaper or saving a broken selection.
     check_video "$1" || return 1
-    pkill -x mpvpaper 2>/dev/null
+    local previous_players
+    previous_players=$(pgrep -u "$(id -u)" -x mpvpaper || true)
     # Use native NVDEC on NVIDIA; VA-API on AMD/Intel.
     eval "$("$HOME/.config/hypr/scripts/GpuInfo.sh")"
     local g=${DISPLAY_GPU^^} hw="hwdec=auto"
@@ -54,7 +55,11 @@ play() {
         tail -n 12 "$LOGDIR/mpvpaper.log" >&2
         return 1
     fi
-    # Remove the still-image layer only after the player survives startup.
+    # Keep the previous wallpaper until the replacement survives startup.
+    local previous
+    while read -r previous; do
+        [[ -z $previous ]] || kill "$previous" 2>/dev/null || true
+    done <<< "$previous_players"
     swww kill 2>/dev/null || true
     pkill -x swaybg 2>/dev/null || true
     pkill -x hyprpaper 2>/dev/null || true

@@ -96,6 +96,6 @@ d_extras() {
 }
 
 d_sddm() {
-    run sudo pacman -S --needed --noconfirm sddm qt6-svg qt6-virtualkeyboard qt6-multimedia-ffmpeg || fail "Couldn't install SDDM."
+    run sudo pacman -S --needed --noconfirm sddm xorg-server qt6-svg qt6-virtualkeyboard qt6-multimedia-ffmpeg || fail "Couldn't install SDDM."
 }
 DM_OTHERS=(gdm lightdm ly greetd)

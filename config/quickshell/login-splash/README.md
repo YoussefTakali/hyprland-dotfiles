@@ -4,8 +4,9 @@
 The Login button and Enter display it before submitting authentication. Failed
 authentication restores the login form through the existing failure handler.
 
-`transition.png` is a rendered frame of that scene for the compositor handoff.
-The native bridge uses the same pixels with its old spinner disabled. The
+The installer uses the Astronaut poster for the initial handoff. The login theme
+chooser can export `transition.png` to match the selected scene exactly.
+When that frame is available, the native bridge uses its pixels without a spinner. The
 wallpaper helper waits for the desktop overlay to render before replacing the
 underlying frame. The desktop overlay exits with one 150 ms fade when the
 wallpaper and Waybar are ready. There is no additional minimum display time.

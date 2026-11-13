@@ -35,7 +35,7 @@ def trial_failed_before_startup(return_code, trial_marker, interrupted=False, el
     # The marker is removed by the initial wallpaper submission: a liveness
     # confirmation, not an optical or performance claim. Never restart a normal
     # logout or an explicitly interrupted launcher.
-    return not interrupted and (return_code != 0 or (trial_marker.exists() and (elapsed is None or elapsed < 10)))
+    return not interrupted and trial_marker.exists() and (return_code != 0 or elapsed is None or elapsed < 10)
 
 
 def run_trial(arguments, trial_env, packaged_env, state):

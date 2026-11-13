@@ -16,11 +16,9 @@ before the compositor starts.
 Super+E invokes `$files --new-window`; the bundled file manager is Nautilus.
 Two consecutive live launches were verified to create two separate windows.
 
-The installer copies these configurations and artwork through its existing
-configuration installation step. Existing installations can apply them using
-`python3 tools/session/repair-session.py`, which backs up changed files, installs the
-splash, updates the key binding and regenerates the startup cache. That repair
-also applies the existing session/portal repairs described in its source.
+Run Desktop Setup or `./install.sh --sddm` to install or upgrade the
+shared scene and select the dotfiles session through the normal installer.
+The installer prepares the desktop wallpaper cache from the available artwork.
 
 Validation: startup-pipeline regression checks passed, Hyprland reported no
 configuration errors, and a captured live preview showed the revised splash.

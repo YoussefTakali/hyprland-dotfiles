@@ -14,13 +14,23 @@ def signature(path):
     return [info.st_size, info.st_mtime_ns]
 
 
+def scene_signature():
+    scene_dir = Path.home() / ".config/quickshell/login-splash"
+    for name in ("transition.png", "jake.png"):
+        path = scene_dir / name
+        if path.is_file():
+            return [name, signature(path)]
+    return None
+
+
 def select(wall, monitors, cache):
     try:
         saved = json.loads((cache / "manifest.json").read_text())
+        if not isinstance(saved, dict):
+            return wall
         image = cache / "wallpaper.qoi"
-        frame = Path.home() / ".config/quickshell/login-splash/transition.png"
-        frame_signature = signature(frame) if frame.is_file() else None
-        if saved.get("scene") != frame_signature:
+        scene = scene_signature()
+        if saved.get("scene") != scene:
             return wall
         if (saved["wall"] == signature(wall) and saved["monitors"] == signature(monitors)
                 and saved["image"] == signature(image)):
@@ -69,7 +79,7 @@ def prepare(wall, monitors, cache, drm=Path("/sys/class/drm")):
     cache.mkdir(parents=True, exist_ok=True)
     scene_dir = Path.home() / ".config/quickshell/login-splash"
     shared_frame = scene_dir / "transition.png"
-    scene_before = signature(shared_frame) if shared_frame.is_file() else None
+    scene_before = scene_signature()
     with tempfile.TemporaryDirectory(dir=cache, prefix="prepare-") as tmp:
         image = Path(tmp) / "wallpaper.qoi"
         raw = Path(tmp) / "wallpaper.bgrx"
@@ -107,7 +117,7 @@ def prepare(wall, monitors, cache, drm=Path("/sys/class/drm")):
             raw.write_bytes(waiting.convert("RGB").tobytes("raw", "BGRX"))
         if before != (signature(wall), signature(monitors)):
             return  # selection or display changed while decoding
-        scene_after = signature(shared_frame) if shared_frame.is_file() else None
+        scene_after = scene_signature()
         if scene_before != scene_after:
             return
         metadata = {"scene": scene_before, "wall": before[0], "monitors": before[1], "image": signature(image),

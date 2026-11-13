@@ -17,14 +17,6 @@ spec = importlib.util.spec_from_file_location("cache", repo / "config/hypr/scrip
 cache_module = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(cache_module)
 
-# Fresh install outside Hyprland: prebuild for a single connector and the
-# standard preferred/scale-1 rule; refuse ambiguous monitor layouts.
-
-
-
-# Fedora ships Lua as a shared library, without a separate lua CLI.
-
-
 class StartupPipelineTests(unittest.TestCase):
     def test_wallpaper_cache_invalidation(self):
         with tempfile.TemporaryDirectory(prefix="wallpaper-cache-test-") as tmp:
@@ -47,6 +39,8 @@ class StartupPipelineTests(unittest.TestCase):
             wall.write_bytes(b"changed image")
             assert cache_module.select(wall, monitors, cache) == wall
             assert cache_module.select(wall, monitors, home / "missing") == wall
+            (cache / "manifest.json").write_text("[]")
+            assert cache_module.select(wall, monitors, cache) == wall
 
     def test_first_login_cache_without_compositor(self):
         with tempfile.TemporaryDirectory(prefix="first-login-cache-test-") as tmp:

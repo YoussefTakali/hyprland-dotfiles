@@ -17,7 +17,12 @@ ShellRoot {
     Process {
         running: true
         command: ["bash", "-c", 'for ((i=0;i<60;i++)); do if [[ -f "$JAKE_SPLASH_READY" ]] && pgrep -u "$UID" -x waybar >/dev/null; then exit 0; fi; sleep .1; done; exit 1']
-        onExited: { root.desktopReady = true; root.finish(); }
+        onExited: (exitCode, exitStatus) => {
+            if (exitCode === 0 && exitStatus === 0) {
+                root.desktopReady = true;
+                root.finish();
+            }
+        }
     }
     Process {
         running: root.firstFrame && !!Quickshell.env("JAKE_SPLASH_MAPPED")

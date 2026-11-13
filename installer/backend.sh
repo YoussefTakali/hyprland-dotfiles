@@ -22,7 +22,7 @@ set -uo pipefail
 
 HERE="$(cd "$(dirname "$0")/.." && pwd)"          # the repository
 STAMP=$(date +%Y%m%d-%H%M%S)
-BACKUP="$HOME/.config-backup-$STAMP"
+BACKUP="$HOME/.config-backup-$STAMP-$$"
 LOGFILE="$HOME/.cache/desktop-install-$STAMP.log"
 mkdir -p "$HOME/.cache"
 exec > >(tee -a "$LOGFILE") 2>&1
@@ -103,11 +103,7 @@ echo "Hyprland ${HYPR_VER:-?}"
 # ── 4. graphics drivers ─────────────────────────────────────────────────────
 step "Setting up graphics ($MODE)"
 if (( OPT_DRIVERS )); then
-    if [[ "$DISTRO" == fedora ]]; then
-        python3 "$HERE/installer/gpu-setup.py" --install || fail "Graphics setup failed; see the specific error above."
-    else
-        d_drivers
-    fi
+    d_drivers
 else
     echo "Driver installation skipped (OPT_DRIVERS=0); existing drivers retained."
 fi
@@ -187,9 +183,12 @@ sed "s|@HOME@|$HOME|g" "$HERE/home/applications/blueman-manager.desktop" \
 for prof in "$HOME"/.mozilla/firefox/*.default-release "$HOME"/.config/mozilla/firefox/*.default-release; do
     [[ -d "$prof" ]] || continue
     dest="$BACKUP/firefox/${prof#"$HOME"/}"
-    mkdir -p "$dest" "$prof/chrome"
-    [[ ! -e "$prof/user.js" ]] || cp -a "$prof/user.js" "$dest/"
-    [[ ! -e "$prof/chrome/userChrome.css" ]] || cp -a "$prof/chrome/userChrome.css" "$dest/"
+    mkdir -p "$dest" "$prof/chrome" || fail "Could not prepare Firefox backup."
+    for original in "$prof/user.js" "$prof/chrome/userChrome.css"; do
+        if [[ -e "$original" || -L "$original" ]]; then
+            cp -aL -- "$original" "$dest/" || fail "Could not back up Firefox settings at $original."
+        fi
+    done
     cp "$HERE/firefox/userChrome.css" "$prof/chrome/" || fail "Could not install Firefox style."
     cp "$HERE/firefox/user.js" "$prof/" || fail "Could not install Firefox settings."
 done
@@ -239,8 +238,11 @@ if [[ -n "$kb" && "$kb" != "n/a" ]]; then
     echo "$kb" > "$HOME/.cache/kb_layout"
     echo "Keyboard layout: $kb${kbv:+ ($kbv)}"
 fi
+python3 -I "$HERE/installer/migrate-gpu-settings.py" || fail "Could not migrate existing graphics settings."
 bash "$HOME/.config/hypr/scripts/GpuConfig.sh" || fail "Could not configure the detected graphics device."
-python3 "$HOME/.config/hypr/scripts/StartHyprland.py" --prepare-launcher || warn "Fast launcher cache unavailable; the native launcher will use its normal detection."
+if [[ "$DISTRO" == fedora ]]; then
+    python3 "$HOME/.config/hypr/scripts/StartHyprland.py" --prepare-launcher || warn "Fast launcher cache unavailable; the native launcher will use its normal detection."
+fi
 if [[ "$MODE" != nvidia* && "$MODE" != hybrid-nvidia ]]; then      # NVIDIA-only variables break other GPUs
     sed -i -E 's/^(\s*env\s*=\s*(LIBVA_DRIVER_NAME|__GLX_VENDOR_LIBRARY_NAME|NVD_BACKEND),nvidia)/# (no NVIDIA GPU) \1/' \
         "$HOME/.config/hypr/configs/ENVariables.conf" 2>/dev/null
@@ -303,11 +305,14 @@ sub 40
 mkdir -p "$HOME/Pictures/wallpapers" "$HOME/.config/hypr/wallpaper_effects"
 WP=$(find "$HERE/wallpapers" -maxdepth 1 -type f -name 'current.*' -print -quit)
 [[ -f "$WP" ]] || fail "The bundled wallpaper is missing."
+if [[ -s "$BACKUP/hypr/wallpaper_effects/.wallpaper_current" ]]; then
+    WP="$BACKUP/hypr/wallpaper_effects/.wallpaper_current"
+fi
 cp -a --update=none "$HERE/wallpapers/." "$HOME/Pictures/wallpapers/" || fail "Could not install the bundled wallpapers."
 cp "$WP" "$HOME/.config/hypr/wallpaper_effects/.wallpaper_current" || fail "Could not set the startup wallpaper."
 # Give the shared loading scene a still on a fresh checkout without personal media.
 splash="$HOME/.config/quickshell/login-splash/jake.png"
-if [[ ! -f "$splash" ]]; then
+if [[ "$OPT_LOGIN" != sddm && ! -f "$splash" ]]; then
     python3 - "$WP" "$splash" <<'PY_IMAGE' || warn "Could not prepare the loading scene still."
 from PIL import Image
 import sys
@@ -336,25 +341,23 @@ xdg-mime default org.gnome.Nautilus.desktop inode/directory 2>/dev/null || true
 # ── 8. login screen ─────────────────────────────────────────────────────────
 step "Setting up the login screen"
 run sudo python3 "$HERE/installer/install-session.py" || fail "Could not install the portable Hyprland session."
-if [[ "$OPT_LOGIN" == sddm && "$DISTRO" == fedora ]]; then
-    run bash "$HERE/installer/session/repair-desktop-login.sh" || fail "Desktop login repair failed."
-elif [[ "$OPT_LOGIN" == sddm ]]; then
+if [[ "$OPT_LOGIN" == sddm ]]; then
     d_sddm
-    T=/usr/share/sddm/themes/sddm-astronaut-theme
-    [[ -d "$T" ]] || { run sudo git clone -q --depth=1 https://github.com/Keyitdev/sddm-astronaut-theme.git "$T" \
-        && sudo cp -r "$T/Fonts/." /usr/share/fonts/ 2>/dev/null; }
-    sudo sed -i 's|^ConfigFile=.*|ConfigFile=Themes/jake_the_dog.conf|' "$T/metadata.desktop" 2>/dev/null
-    sudo mkdir -p /etc/sddm.conf.d
-    printf '[Theme]\nCurrent=sddm-astronaut-theme\n' | sudo tee /etc/sddm.conf.d/10-theme.conf >/dev/null
-    run sudo bash "$HOME/.config/hypr/UserScripts/sddm-login-fix.sh" || fail "SDDM configuration failed."
-    for dm in "${DM_OTHERS[@]}"; do systemctl is-enabled "$dm" >/dev/null 2>&1 && run sudo systemctl disable "$dm"; done
+    run sudo bash "$HERE/installer/session/install-sddm.sh" "$HOME/.local/share/hypr-login-themes" || fail "Could not install the SDDM theme."
+    scene="$HOME/.config/quickshell/login-splash"
+    cp /usr/share/sddm/themes/sddm-astronaut-theme/Components/jake.png "$scene/jake.png" || fail "Could not install the desktop login artwork."
+    if [[ -f "$scene/transition.png" ]]; then
+        mv "$scene/transition.png" "$BACKUP/previous-transition.png" || fail "Could not back up the previous transition frame."
+    fi
+    python3 "$HOME/.config/hypr/scripts/StartupWallpaperCache.py"
     run sudo systemctl enable -f sddm || fail "Couldn't enable SDDM."
-    run sudo python3 "$HERE/installer/select-session.py" "$USER" || fail "Could not select the Hyprland session."
-else
-    run bash "$HERE/installer/session/repair-desktop-login.sh" --user-only || fail "GPU login repair failed."
-    run sudo python3 "$HERE/installer/select-session.py" "$USER" || fail "Could not select the Hyprland session."
-    echo "The login screen will start Hyprland for $USER."
+    for dm in "${DM_OTHERS[@]}"; do
+        if systemctl is-enabled "$dm" >/dev/null 2>&1; then
+            run sudo systemctl disable "$dm" || fail "Could not disable $dm."
+        fi
+    done
 fi
+run sudo python3 "$HERE/installer/select-session.py" "$USER" || fail "Could not select the Hyprland session."
 if ! systemctl is-enabled display-manager >/dev/null 2>&1 && [[ "$OPT_LOGIN" != sddm ]]; then
     note "NO_LOGIN_SCREEN"
     echo "No login screen is installed: log in on the console and type Hyprland (or re-run with the SDDM option)."

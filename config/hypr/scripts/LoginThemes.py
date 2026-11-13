@@ -11,6 +11,7 @@ import subprocess
 import tempfile
 
 THEME = Path('/usr/share/sddm/themes/sddm-astronaut-theme')
+SYSTEM_HELPER = Path('/usr/local/libexec/hyprland-login-themes.py')
 IDS = ('jake', 'itachi-eyes', 'itachi-rain', 'itachi-shadows')
 
 
@@ -76,7 +77,8 @@ def commit(changes):
                 temporary = Path(stream.name)
             temporary.chmod(0o644)
             os.replace(temporary, path)
-        subprocess.run(['restorecon', *map(str, changes)], check=True)
+        if shutil.which('restorecon'):
+            subprocess.run(['restorecon', *map(str, changes)], check=True)
     except Exception:
         for path in changes:
             original = backup / path.relative_to('/')
@@ -91,12 +93,7 @@ def commit(changes):
 def system_install(assets):
     catalog = json.loads((assets / 'catalog.json').read_text())
     base = (THEME / 'Themes/jake_the_dog.conf').read_text()
-    main = (THEME / 'Main.qml').read_text()
-    main = main.replace('function startLoading() { unifiedLoading = true; }',
-                        'function startLoading() { player.pause(); unifiedLoading = true; }\n'
-                        '    function stopLoading() { unifiedLoading = false; player.play(); }')
-    fields = (THEME / 'Components/Input.qml').read_text().replace('root.unifiedLoading = false', 'root.stopLoading()')
-    changes = {THEME / 'Main.qml': main.encode(), THEME / 'Components/Input.qml': fields.encode()}
+    changes = {}
     for key in IDS:
         media = preset_media(assets, catalog, key)
         if media is None:
@@ -199,6 +196,7 @@ def system_check(plans):
 
 
 def main():
+    global THEME
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--assets', type=Path, default=Path.home() / '.local/share/hypr-login-themes')
     parser.add_argument('--apply', choices=IDS)
@@ -208,9 +206,15 @@ def main():
     parser.add_argument('--system-apply', choices=IDS)
     parser.add_argument('--system-check', action='store_true')
     parser.add_argument('--plan', type=Path)
+    parser.add_argument('--theme-dir', type=Path, help=argparse.SUPPRESS)
     args = parser.parse_args()
     assets = args.assets.resolve()
+    if args.system_install or args.system_apply or args.system_check:
+        if os.geteuid() != 0:
+            parser.error('Administrator authentication is required.')
     if args.system_install:
+        if args.theme_dir is not None:
+            THEME = args.theme_dir
         system_install(assets)
         return
     if args.system_apply:
@@ -238,11 +242,13 @@ def main():
             return
         key = available[int(selected.stdout.strip())][0]
         preview = selected.returncode == 10
+    if not preview and not SYSTEM_HELPER.is_file():
+        raise SystemExit('Install the SDDM option in Desktop Setup to enable applying login themes.')
     plan = prepare(assets, key, not preview)
     if preview:
         subprocess.run(['sddm-greeter-qt6', '--test-mode', '--theme', str(plan / 'preview')])
         return
-    subprocess.run(['pkexec', '/usr/bin/python3', str(Path(__file__).resolve()), '--system-apply', key,
+    subprocess.run(['pkexec', '/usr/bin/python3', '-I', str(SYSTEM_HELPER), '--system-apply', key,
                     '--plan', str(plan)], check=True)
     active = Path.home() / '.config/quickshell/login-splash'
     for name in ['JakeLoadingScene.qml', 'jake.png', 'transition.png']:

@@ -43,14 +43,6 @@ icon_size=$(echo "scale=1; ($monitor_height * 3) / ($scale_factor * 150)" | bc)
 adjusted_icon_size=$(echo "$icon_size" | awk '{if ($1 < 15) $1 = 20; if ($1 > 25) $1 = 25; print $1}')
 rofi_override="element-icon{size:${adjusted_icon_size}%;}"
 
-# Kill existing wallpaper daemons for video
-kill_wallpaper_for_video() {
-  swww kill 2>/dev/null
-  pkill mpvpaper 2>/dev/null
-  pkill swaybg 2>/dev/null
-  pkill hyprpaper 2>/dev/null
-}
-
 # Kill existing wallpaper daemons for image
 kill_wallpaper_for_image() {
   pkill mpvpaper 2>/dev/null
@@ -150,9 +142,6 @@ set_sddm_wallpaper() {
 apply_image_wallpaper() {
   local image_path="$1"
 
-  kill_wallpaper_for_image
-  rm -f "$HOME/.config/hypr/wallpaper_effects/.live_wallpaper"   # an image replaces the video for good
-
   source "$SCRIPTSDIR/WallpaperDaemonReady.sh"
   if ! wallpaper_daemon_ready; then
     echo "Starting wallpaper daemon..."
@@ -163,6 +152,9 @@ apply_image_wallpaper() {
     done
   fi
   swww img -o "$focused_monitor" "$image_path" $SWWW_PARAMS || return 1
+
+  kill_wallpaper_for_image
+  rm -f "$HOME/.config/hypr/wallpaper_effects/.live_wallpaper"   # an image replaces the video for good
 
   # Run additional scripts (pass the image path to avoid cache race conditions)
   "$SCRIPTSDIR/WallustSwww.sh" "$image_path"

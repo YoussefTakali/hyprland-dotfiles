@@ -20,6 +20,15 @@ refresh_bar() {
 
 exec 9>"$runtime/hypr-waybar-mode.lock"
 flock 9
+case ${1:-} in
+    --style|--layout)
+        case ${2:-} in
+            '[Glass] Liquid Glass'|'[TOP] Liquid Glass') set -- liquid ;;
+            '[Glass] Liquid Glass V2'|'[TOP] Liquid Glass V2') set -- liquid-v2 ;;
+            '[Glass] Liquid Glass V3'|'[TOP] Liquid Glass V3') set -- liquid-v3 ;;
+        esac
+        ;;
+esac
 layout="" style=""
 case ${1:-} in
     liquid)    layout='[TOP] Liquid Glass'; style='[Glass] Liquid Glass' ;;
