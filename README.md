@@ -43,7 +43,7 @@ Full-quality recording: <a href="assets/demo.mp4">demo.mp4</a></i></p>
 - **Lock screen** — 4 switchable styles (Slate, Iris, Fog, Cards). Frosted wallpaper, music controls with album art and cava visualizer, weather, battery, ambient mode. Secure Wayland session lock with hyprlock fallback.
 - **Power menu** — animated orbs with a 3-second countdown ring. Lock, sleep, logout, restart, shutdown.
 - **Volume & brightness OSD** — glass pill overlay with accent-colored progress bar, follows your wallpaper theme.
-- **Waybar** — adaptive colors from wallpaper. Wi-Fi with speed, Bluetooth with battery, GPU/CPU, privacy indicators, cava visualizer. Left-click Bluetooth for Blueman and right-click for the quick Bluetooth menu.
+- **Waybar** — adaptive colors from wallpaper. Wi-Fi with speed, Bluetooth with battery, GPU/CPU, privacy indicators, cava visualizer. On the Ultimate bar, left-click Bluetooth for the quick menu and right-click for Blueman.
 - **Utilities hub** (Super+X) — screenshot, screen recorder, color picker, clipboard, calculator, emoji, Wi-Fi, Bluetooth, power profiles, night light, OCR, lock screen style switcher.
 - **Keyboard Shortcuts GUI** — add and edit shortcuts without config files.
 - **Video wallpapers** — Super+W picks images or videos; mpvpaper with hardware decoding, pauses under fullscreen, restores on reboot.

@@ -112,8 +112,8 @@
   "tooltip-format-connected": "{device_enumerate}\n\nLeft click: devices · Right click: Blueman",
   "tooltip-format-enumerate-connected": "{device_alias}",
   "tooltip-format-enumerate-connected-battery": "{device_alias}  ·  {device_battery_percentage}%",
-  "on-click": "$HOME/.config/hypr/UserScripts/NetMenu.sh --bluetooth",
-  "on-click-right": "$HOME/.config/hypr/UserScripts/NetMenu.sh --bluetooth-quick"
+  "on-click": "$HOME/.config/hypr/UserScripts/NetMenu.sh --bluetooth-quick",
+  "on-click-right": "$HOME/.config/hypr/UserScripts/Bluetooth.sh"
 },
 
 "group/net_bt": {
