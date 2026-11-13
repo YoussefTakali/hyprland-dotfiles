@@ -23,7 +23,7 @@ check_video() {
     [[ -n $codec ]] || { fail 'No video stream found.'; return 1; }
     decoders=$(mpv --no-config --vd=help 2>/dev/null)
     if ! awk -v c="$codec" '$1 == c || index($1,c "_") == 1 || $2 == "(" c ")" {found=1} END {exit !found}' <<<"$decoders"; then
-        fail "Missing decoder for $codec. Install the full multimedia codec support, then retry. See tools/wallpaper/repair-live-wallpaper.sh in the dotfiles repo."
+        fail "Missing decoder for $codec. Choose a video with a supported codec or rerun Desktop Setup to check multimedia support."
         return 1
     fi
 }

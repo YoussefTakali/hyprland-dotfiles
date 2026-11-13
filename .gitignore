@@ -11,3 +11,13 @@ home/login-themes/*.png
 config/quickshell/login-splash/jake.png
 config/quickshell/login-splash/transition.png
 wallpapers/Itachi-4K/
+
+# Local troubleshooting scripts and their dedicated tests.
+/tools/
+/installer/session/repair-greeter-handoff.py
+/installer/session/repair-lock-password.sh
+/installer/session/repair-login-speed.py
+/installer/session/sddm-display-setup.py
+/installer/session/sddm-wayland-session.sh
+/tests/test_earbud_reconnect.py
+/tests/test_loading_verifier.py

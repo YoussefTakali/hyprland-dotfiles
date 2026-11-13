@@ -10,7 +10,7 @@ REPO = Path(__file__).resolve().parents[1]
 SPEC = importlib.util.spec_from_file_location("login_themes", REPO / "config/hypr/scripts/LoginThemes.py")
 login_themes = importlib.util.module_from_spec(SPEC)
 SPEC.loader.exec_module(login_themes)
-SPEC = importlib.util.spec_from_file_location("greeter", REPO / "installer/session/repair-greeter-handoff.py")
+SPEC = importlib.util.spec_from_file_location("greeter", REPO / "installer/session/prepare-sddm-theme.py")
 greeter = importlib.util.module_from_spec(SPEC)
 SPEC.loader.exec_module(greeter)
 

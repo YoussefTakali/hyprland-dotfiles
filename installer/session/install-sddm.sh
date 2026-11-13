@@ -23,7 +23,7 @@ if [[ -e "$helper" ]]; then
     cp -a "$helper" "$backup/"
 fi
 
-python3 -I "$repo/installer/session/repair-greeter-handoff.py" --prepare-theme "$stage/astronaut"
+python3 -I "$repo/installer/session/prepare-sddm-theme.py" "$stage/astronaut"
 python3 -I "$repo/config/hypr/scripts/LoginThemes.py" --system-install --assets "$assets" --theme-dir "$stage/astronaut"
 install -D -m 0644 "$repo/config/hypr/scripts/LoginThemes.py" "$helper"
 mkdir -p /usr/local/share/fonts/sddm-astronaut
