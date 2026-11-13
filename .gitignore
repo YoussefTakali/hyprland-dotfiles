@@ -5,7 +5,7 @@ __pycache__/
 *.save.*
 backup-*/
 
-# Optional personal login and wallpaper media. See home/login-themes/README.md.
+# Optional personal login and wallpaper media.
 home/login-themes/*.mp4
 home/login-themes/*.png
 config/quickshell/login-splash/jake.png

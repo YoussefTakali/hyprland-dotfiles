@@ -1,8 +1,3 @@
-Both `./setup` (graphical) and `./install.sh` (terminal) use the same installation
-backend for graphics detection, driver setup, Secure Boot checks, session setup,
-and the wallpaper waiting screen. Existing configuration is backed up first.
-See the [desktop guides](docs/README.md) and the [test suite](docs/TESTING.md).
-
 <h1 align="center">Hyprland Desktop</h1>
 
 <p align="center">
@@ -68,8 +63,6 @@ Automatic detection and configuration for:
 - **AMD** — Mesa with full video decoding (Fedora: freeworld), PRIME offload for hybrid setups, VA-API with radeonsi
 - **Intel** — iHD media driver, hybrid GPU pairing
 
-On Fedora, the fixed installer keeps its more conservative driver selection.
-
 PCI detection works even before a graphics driver loads. The connected display
 sets runtime GPU preference, while explicit user overrides and additional GPUs
 remain available. Mixed AMD/NVIDIA systems use vendor auto-detection instead of
@@ -82,8 +75,6 @@ forcing NVIDIA libraries globally.
 - **Intel:** installs media drivers and lets libva select the implementation.
 
 The bar reports NVIDIA usage through nvidia-smi and AMD usage through amdgpu sysfs. On Intel, it shows a utilization counter when available or labels the measured GPU clock in the tooltip.
-
-Run `~/.config/hypr/scripts/GpuInfo.sh` to see your detected setup.
 
 ## Install
 
@@ -123,11 +114,15 @@ configuration setup. `--base` explicitly reinstalls the base. Existing GPU stack
 are preserved. Firmware MOK approval requires the user's physical action at reboot;
 it is never bypassed and Secure Boot is never disabled.
 
-The packaged Hyprland session remains available alongside **Hyprland (Desktop
-dotfiles)**. The installer preselects the latter for GDM/SDDM. Monitor mode matching
-is optional.
+The installer registers and selects **Hyprland (Desktop dotfiles)** for GDM or SDDM alongside the packaged session. Choose the SDDM option to install the shared login scene and theme presets. The installer backs up existing settings before replacing them.
 
-The installer backs up existing settings before replacing them.
+### Desktop fixes
+
+- Login starts the wallpaper, Waybar, notifications and screen-sharing portals automatically. The overview and dropdown terminal open on demand.
+- The Appearance Manager includes three Liquid Glass presets and persistent controls for animations, blur, layout, game mode and Zen mode.
+- Blueman actions target the selected service and port. Video wallpaper restores at login, and Kitty supports copying by selection and pasting with a right-click.
+
+Once installation finishes, log into the dotfiles session. Desktop features are available through the menus and shortcuts below.
 
 ## Keyboard Shortcuts
 
