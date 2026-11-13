@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # /* ---- 💫 https://github.com/JaKooLit 💫 ---- */  #
-# Rofi Themes - Script to preview and apply themes by live-reloading the config.
+# Preview Rofi themes in the picker and save only on confirmation.
 
 # --- Configuration ---
 ROFI_THEMES_DIR_CONFIG="$HOME/.config/rofi/themes"
@@ -75,9 +75,6 @@ if [ ! -f "$ROFI_CONFIG_FILE" ]; then
   exit 1
 fi
 
-# Backup the original config content
-original_rofi_config_content_backup=$(cat "$ROFI_CONFIG_FILE")
-
 # Generate a sorted list of available theme file names
 mapfile -t available_theme_names < <((
   find "$ROFI_THEMES_DIR_CONFIG" -maxdepth 1 -name "*.rasi" -type f -printf "%f\n" 2>/dev/null
@@ -106,12 +103,8 @@ fi
 while true; do
   theme_to_preview_now="${available_theme_names[$current_selection_index]}"
 
-  # Apply the theme for preview
-  if ! apply_rofi_theme_to_config "$theme_to_preview_now"; then
-    echo "$original_rofi_config_content_backup" >"$ROFI_CONFIG_FILE"
-    notify_user "$IDIR/error.png" "Preview Error" "Failed to apply $theme_to_preview_now. Reverted."
-    exit 1
-  fi
+  preview_path="$ROFI_THEMES_DIR_CONFIG/$theme_to_preview_now"
+  [[ -f "$preview_path" ]] || preview_path="$ROFI_THEMES_DIR_LOCAL/$theme_to_preview_now"
 
   # Prepare theme list for Rofi
   rofi_input_list=""
@@ -127,6 +120,7 @@ while true; do
       -p "Rofi Theme" \
       -mesg "‼️ **note** ‼️ Enter: Preview || Ctrl+S: Apply &amp; Exit || Esc: Cancel" \
       -config "$ROFI_THEME_FOR_THIS_SCRIPT" \
+      -theme "$preview_path" \
       -selected-row "$current_selection_index" \
       -kb-custom-1 "Control+s")
 
@@ -138,15 +132,14 @@ while true; do
       current_selection_index="$chosen_index_from_rofi"
     fi
   elif [ $rofi_exit_code -eq 1 ]; then # Escape
-    notify_user "$IDIR/note.png" "Rofi Theme" "Selection cancelled. Reverting to original theme."
-    echo "$original_rofi_config_content_backup" >"$ROFI_CONFIG_FILE"
     break
   elif [ $rofi_exit_code -eq 10 ]; then # Custom bind 1 (Ctrl+S)
+    apply_rofi_theme_to_config "$theme_to_preview_now" || exit 1
+    bash "$HOME/.config/hypr/scripts/RofiShape.sh" custom || exit 1
     notify_user "$IDIR/ja.png" "Rofi Theme Applied" "$(basename "$theme_to_preview_now" .rasi)"
     break
   else # Error or unexpected exit code
-    notify_user "$IDIR/error.png" "Rofi Error" "Unexpected Rofi exit ($rofi_exit_code). Reverting."
-    echo "$original_rofi_config_content_backup" >"$ROFI_CONFIG_FILE"
+    notify_user "$IDIR/error.png" "Rofi Error" "Unexpected Rofi exit ($rofi_exit_code)."
     break
   fi
 done

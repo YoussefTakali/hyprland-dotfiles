@@ -89,7 +89,7 @@ d_drivers() {
 
 d_extras() {
     run sudo dnf install -y --skip-unavailable \
-        quickshell mpvpaper /usr/bin/ffmpeg qt6-qtmultimedia qt6-qt5compat qt6-qtsvg \
+        quickshell waybar swww swaync python3-pillow gtk3 gtk-layer-shell bluez mpvpaper /usr/bin/ffmpeg qt6-qtmultimedia qt6-qt5compat qt6-qtsvg \
         cava wf-recorder tesseract tesseract-langpack-eng hyprpicker cliphist grim slurp swappy wl-clipboard \
         ImageMagick fastfetch lsd fzf kitty playerctl blueman nautilus Thunar \
         python3-gobject jq tuned-ppd libnotify julietaula-montserrat-fonts nautilus-python mokutil qalculate \

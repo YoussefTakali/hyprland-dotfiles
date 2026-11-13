@@ -1,0 +1,9 @@
+[Desktop Entry]
+Type=Application
+Name=Bluetooth
+Comment=Bluetooth devices with live connection, audio, and battery status
+Exec="@HOME@/.config/hypr/UserScripts/Bluetooth.sh"
+Icon=bluetooth
+Terminal=false
+Categories=GTK;Settings;HardwareSettings;
+Keywords=bluetooth;devices;headphones;

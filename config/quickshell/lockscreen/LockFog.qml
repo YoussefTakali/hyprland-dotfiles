@@ -57,7 +57,7 @@ Item {
     // fog-free circle used for the lock/unlock transitions
     readonly property real fullR: Math.hypot(width, height) * 0.75
     property real clearR: fullR
-    Behavior on clearR { NumberAnimation { duration: view.unlocking ? 750 : 1100; easing.type: view.unlocking ? Easing.InCubic : Easing.OutCubic } }
+    Behavior on clearR { NumberAnimation { duration: view.unlocking ? 160 : 350; easing.type: view.unlocking ? Easing.InCubic : Easing.OutCubic } }
     onOpenChanged: clearR = open ? fullR : 0
     Component.onCompleted: {
         if (view.shell.preview) input.text = Quickshell.env("QS_LOCK_PREVIEW_TEXT") || "";
@@ -313,7 +313,7 @@ Item {
         id: ui
         anchors.fill: parent
         opacity: view.open ? 0 : 1
-        Behavior on opacity { NumberAnimation { duration: view.unlocking ? 300 : 900; easing.type: Easing.OutCubic } }
+        Behavior on opacity { NumberAnimation { duration: view.unlocking ? 160 : 350; easing.type: Easing.OutCubic } }
         layer.enabled: true
         layer.effect: MultiEffect { shadowEnabled: true; shadowColor: "black"; shadowOpacity: 0.55; shadowBlur: 0.45; shadowVerticalOffset: 1 }
 

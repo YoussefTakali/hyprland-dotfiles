@@ -17,19 +17,15 @@ file_exists() {
     fi
 }
 
-# Kill already running processes
-_ps=(rofi)
-for _prs in "${_ps[@]}"; do
-    if pidof "${_prs}" >/dev/null; then
-        pkill "${_prs}"
-    fi
-done
-
 # quit ags & relaunch ags
 #ags -q && ags &
 
-# quit quickshell & relaunch quickshell
-pkill qs && qs &
+# Refresh an existing overview only. Never terminate the locker, OSD or calendar,
+# and keep the overview on demand when it has not been opened this session.
+if pgrep -u "$(id -u)" -f "[q]s -c overview" >/dev/null; then
+    pkill -u "$(id -u)" -f "[q]s -c overview"
+    setsid -f qs -c overview >/dev/null 2>&1
+fi
 
 # Wallust refresh (synchronous to ensure colors are ready)
 ${SCRIPTSDIR}/WallustSwww.sh

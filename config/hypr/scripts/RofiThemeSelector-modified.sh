@@ -214,7 +214,7 @@ create_config_copy
 if select_theme && [ -n "${SELECTED}" ]
 then
     # Apply the selected theme
-    add_theme_to_config "${theme_names[${SELECTED}]}"
+    add_theme_to_config "${theme_names[${SELECTED}]}" && bash "$HOME/.config/hypr/scripts/RofiShape.sh" custom || exit 1
 
     # Send notification with the selected theme name
     selection="${theme_names[${SELECTED}]}"

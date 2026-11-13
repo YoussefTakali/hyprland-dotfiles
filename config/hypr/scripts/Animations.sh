@@ -1,31 +1,27 @@
 #!/usr/bin/env bash
-# /* ---- 💫 https://github.com/JaKooLit 💫 ---- */  ##
-# For applying Animations from different users
-
-# Check if rofi is already running
-if pidof rofi > /dev/null; then
-  pkill rofi
+# Select a persistent animation override or inherit the desktop theme's preset.
+set -euo pipefail
+root="$HOME/.config/hypr"
+out="$root/UserConfigs/AnimationOverride.conf"
+choice=${1:-}
+if [[ -z "$choice" ]]; then
+    choice=$({
+        printf '%s\n' 'Follow desktop theme'
+        find -L "$root/animations" -maxdepth 1 -type f -name '*.conf' -printf '%f
+' | sed 's/.conf$//' | sort -V
+    } | rofi -i -dmenu -no-custom -config "$HOME/.config/rofi/config-Animations.rasi" -p 'Animations') || exit 0
 fi
+[[ -n "$choice" ]] || exit 0
 
-# Variables
-iDIR="$HOME/.config/swaync/images"
-SCRIPTSDIR="$HOME/.config/hypr/scripts"
-animations_dir="$HOME/.config/hypr/animations"
-UserConfigs="$HOME/.config/hypr/UserConfigs"
-rofi_theme="$HOME/.config/rofi/config-Animations.rasi"
-msg='❗NOTE:❗ This will copy animations into UserAnimations.conf'
-# list of animation files, sorted alphabetically with numbers first
-animations_list=$(find -L "$animations_dir" -maxdepth 1 -type f | sed 's/.*\///' | sed 's/\.conf$//' | sort -V)
-
-# Rofi Menu
-chosen_file=$(echo "$animations_list" | rofi -i -dmenu -config $rofi_theme -mesg "$msg")
-
-# Check if a file was selected
-if [[ -n "$chosen_file" ]]; then
-    full_path="$animations_dir/$chosen_file.conf"    
-    cp "$full_path" "$UserConfigs/UserAnimations.conf"    
-    notify-send -u low -i "$iDIR/ja.png" "$chosen_file" "Hyprland Animation Loaded"
+if [[ "$choice" == 'Follow desktop theme' ]]; then
+    line='source = $HOME/.config/hypr/UserConfigs/Ultimate/Animations.conf'
+elif [[ "$choice" != */* && -f "$root/animations/$choice.conf" ]]; then
+    printf -v line 'source = $HOME/.config/hypr/animations/%s.conf' "$choice"
+else
+    exit 1
 fi
-
-sleep 1
-"$SCRIPTSDIR/RefreshNoWaybar.sh"
+tmp=$(mktemp "$out.XXXXXX")
+printf '%s\n' "$line" >"$tmp"
+mv "$tmp" "$out"
+hyprctl reload >/dev/null
+notify-send -u low 'Animations' "$choice"

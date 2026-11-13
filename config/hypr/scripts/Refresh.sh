@@ -14,42 +14,20 @@ file_exists() {
   fi
 }
 
-# Kill already running processes
-_ps=(waybar rofi swaync ags)
-for _prs in "${_ps[@]}"; do
-  if pidof "${_prs}" >/dev/null; then
-    pkill "${_prs}"
-  fi
-done
-
-# added since wallust sometimes not applying
-killall -SIGUSR2 waybar
-# Added sleep for GameMode causing multiple waybar
-sleep 0.1
-
 # quit ags & relaunch ags
 #ags -q && ags &
 
 # quit quickshell & relaunch quickshell
 # (2026-10-28) only the KooL overview: `pkill qs` also killed the volume/brightness OSD, the calendar popup and
 # could kill the lock screen; and the bare `qs` it relaunched has no config here, so the overview stayed dead.
-pkill -f "[q]s -c overview"; sleep 0.2; setsid -f qs -c overview >/dev/null 2>&1
+if pgrep -u "$(id -u)" -f "[q]s -c overview" >/dev/null; then
+  pkill -u "$(id -u)" -f "[q]s -c overview"
+  setsid -f qs -c overview >/dev/null 2>&1
+fi
 pgrep -f "[q]uickshell/osd/shell.qml" >/dev/null || setsid -f qs -p "$HOME/.config/quickshell/osd/shell.qml" >/dev/null 2>&1
 
-# some process to kill
-for pid in $(pidof waybar rofi swaync ags swaybg); do
-  kill -SIGUSR1 "$pid"
-  sleep 0.1
-done
-
-#Restart waybar
-sleep 0.1
-waybar &
-
-# relaunch swaync
-sleep 0.3
-swaync >/dev/null 2>&1 &
-# reload swaync
+# Reload the current bar and notifications using their selected settings.
+bash "$SCRIPTSDIR/WaybarMode.sh" --refresh
 swaync-client --reload-config
 
 # Relaunching rainbow borders if the script exists

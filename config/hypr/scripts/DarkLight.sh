@@ -20,12 +20,6 @@ wallust_config="$HOME/.config/wallust/wallust.toml"
 pallete_dark="dark16"
 pallete_light="light16"
 
-# intial kill process
-for pid in waybar rofi swaync ags swaybg; do
-    killall -SIGUSR1 "$pid"
-done
-
-
 # Initialize swww if needed
 swww query || swww-daemon --format xrgb
 
@@ -61,24 +55,6 @@ else
     sed -i 's/^palette = .*/palette = "'"$pallete_light"'"/' "$wallust_config" 
 fi
 
-# Function to set Waybar style
-set_waybar_style() {
-    theme="$1"
-    waybar_styles="$HOME/.config/waybar/style"
-    waybar_style_link="$HOME/.config/waybar/style.css"
-    style_prefix="\\[${theme}\\].*\\.css$"
-
-    style_file=$(find -L "$waybar_styles" -maxdepth 1 -type f -regex ".*$style_prefix" | shuf -n 1)
-
-    if [ -n "$style_file" ]; then
-        ln -sf "$style_file" "$waybar_style_link"
-    else
-        echo "Style file not found for $theme theme."
-    fi
-}
-
-# Call the function after determining the mode
-set_waybar_style "$next_mode"
 notify_user "$next_mode"
 
 
@@ -238,12 +214,6 @@ update_theme_mode
 ${SCRIPTSDIR}/WallustSwww.sh &&
 
 sleep 2
-# kill process
-for pid1 in waybar rofi swaync ags swaybg; do
-    killall "$pid1"
-done
-
-sleep 1
 ${SCRIPTSDIR}/Refresh.sh 
 
 sleep 0.5

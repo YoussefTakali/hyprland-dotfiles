@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Wi-Fi and Bluetooth menus in rofi. Usage: NetMenu.sh [--wifi|--bluetooth]   (no argument: pick one)
+# Wi-Fi and Bluetooth menus in rofi. Usage: NetMenu.sh [--wifi|--bluetooth|--bluetooth-quick]   (no argument: pick one)
 
 THEME="$HOME/.config/rofi/config-utilities-list.rasi"
 menu() { rofi -dmenu -i -p "$1" -theme "$THEME" "${@:2}"; }
@@ -152,11 +152,11 @@ bt_why() {    # turn bluetoothctl's error into something useful
     esac
 }
 
-bluetooth() {
+bluetooth_quick() {
     local powered rows=() macs=() mac name i
     if ! bt_powered; then
         [[ $(printf '󰂯  Turn Bluetooth on\n' | menu "Bluetooth") ]] || return
-        if bt_power on; then notify-send -a "Bluetooth" "Bluetooth on"; bluetooth
+        if bt_power on; then notify-send -a "Bluetooth" "Bluetooth on"; bluetooth_quick
         else notify-send -u critical -a "Bluetooth" "Couldn't turn Bluetooth on" "Check that it isn't blocked: rfkill list"; fi
         return
     fi
@@ -187,7 +187,7 @@ bluetooth() {
         __off)  if bt_power off; then notify-send -a "Bluetooth" "Bluetooth off"
                 else notify-send -u critical -a "Bluetooth" "Couldn't turn Bluetooth off"; fi ;;
         __pair)     bt_pair ;;
-        __settings) blueman-manager >/dev/null 2>&1 & ;;
+        __settings) bluetooth ;;
         *)          bt_device "${macs[$i]}" "${rows[$i]}" ;;
     esac
 }
@@ -251,7 +251,15 @@ bt_pair() {
     fi
 }
 
-case "$1" in
+bluetooth() {
+    exec bash "$HOME/.config/hypr/UserScripts/Bluetooth.sh"
+}
+
+# Allow diagnostics to source the functions without opening a menu.
+[[ ${BASH_SOURCE[0]} == "$0" ]] || return 0
+
+case "${1:-}" in
+    --bluetooth-quick) bluetooth_quick ;;
     --wifi)      wifi ;;
     --bluetooth) bluetooth ;;
     *)

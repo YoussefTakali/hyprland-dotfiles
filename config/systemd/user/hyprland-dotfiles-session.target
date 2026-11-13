@@ -1,0 +1,5 @@
+[Unit]
+Description=Graphical session for the Hyprland dotfiles
+Documentation=https://wiki.hypr.land/configuring/extra/systemd/
+BindsTo=graphical-session.target
+After=graphical-session.target

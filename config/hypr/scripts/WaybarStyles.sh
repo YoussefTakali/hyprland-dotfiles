@@ -9,22 +9,23 @@ waybar_styles="$HOME/.config/waybar/style"
 waybar_style="$HOME/.config/waybar/style.css"
 SCRIPTSDIR="$HOME/.config/hypr/scripts"
 rofi_config="$HOME/.config/rofi/config-waybar-style.rasi"
-msg=' 🎌 NOTE: Some waybar STYLES NOT fully compatible with some LAYOUTS'
+msg='Choose how the bar looks'
 
 # Apply selected style
 apply_style() {
-    ln -sf "$waybar_styles/$1.css" "$waybar_style"
-    "${SCRIPTSDIR}/Refresh.sh" &
+    bash "${SCRIPTSDIR}/WaybarMode.sh" --style "$1"
 }
 
 main() {
     # resolve current symlink and strip .css
     current_target=$(readlink -f "$waybar_style")
     current_name=$(basename "$current_target" .css)
+    [[ "$current_name" != "[Ultimate] Glass Adaptive" ]] || current_name="Follow desktop theme"
 
     # gather all style names (without .css) into an array
     mapfile -t options < <(
-        find -L "$waybar_styles" -maxdepth 1 -type f -name '*.css' \
+        printf '%s\n' 'Follow desktop theme'
+        find -L "$waybar_styles" -maxdepth 1 -type f -name '*.css' ! -name '[[]Ultimate] Glass Adaptive.css' ! -name 'ultimate-reflection.css' \
             -exec basename {} .css \; \
             | sort
     )
@@ -42,7 +43,7 @@ main() {
 
     # launch rofi with the annotated list and pre‑selected row
     choice=$(printf '%s\n' "${options[@]}" \
-        | rofi -i -dmenu \
+        | rofi -i -dmenu -no-custom \
                -config "$rofi_config" \
                -mesg "$msg" \
                -selected-row "$default_row"
@@ -52,13 +53,8 @@ main() {
 
     # remove annotation and apply
     choice=${choice#"$MARKER "}
+    [[ "$choice" != "Follow desktop theme" ]] || choice="[Ultimate] Glass Adaptive"
     apply_style "$choice"
 }
-
-# Kill Rofi if already running before execution
-if pgrep -x "rofi" >/dev/null; then
-    pkill rofi
-    #exit 0
-fi
 
 main

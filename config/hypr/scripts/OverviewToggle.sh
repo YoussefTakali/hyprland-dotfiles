@@ -5,19 +5,22 @@
 set -euo pipefail
 
 # 1) Try Quickshell via IPC (works if QS is running and listening)
-if pgrep -x quickshell >/dev/null 2>&1; then
-  if qs ipc -c overview call overview toggle >/dev/null 2>&1; then
-    exit 0
-  fi
+# The running executable may be named "qs", not "quickshell". Probe its IPC
+# directly; testing the process name needlessly started another shell and slept.
+if qs ipc -c overview call overview toggle >/dev/null 2>&1; then
+  exit 0
 fi
 
 # If QS isn't running, but the CLI exists, try starting it and retry once
 if command -v qs >/dev/null 2>&1; then
   qs -c overview >/dev/null 2>&1 &
-  sleep 0.6
-  if qs ipc -c overview call overview toggle >/dev/null 2>&1; then
-    exit 0
-  fi
+  # Respond as soon as the shell is ready instead of always sleeping 600 ms.
+  for ((i=0; i<30; i++)); do
+    if qs ipc -c overview call overview toggle >/dev/null 2>&1; then
+      exit 0
+    fi
+    sleep 0.05
+  done
 fi
 
 # 2) Fall back to AGS template

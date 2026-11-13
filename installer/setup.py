@@ -7,6 +7,7 @@ Administrator access is asked once, with the system's password dialog (pkexec in
 """
 import os
 import re
+import shlex
 import shutil
 import subprocess
 import sys
@@ -31,6 +32,9 @@ LOCKS = [("Slate", "Glass pane on the left, wallpaper drifting"),
          ("Cards", "Centred clock with a music card")]
 BARS = [("ultimate", "Ultimate glass bar", "Frosted bar of pills; its shape follows the theme switcher (Super+Ctrl+T)"),
         ("adaptive", "Classic bar", "One bar across the top, colours from the wallpaper"),
+        ("liquid", "Liquid glass", "Translucent light panels that blur the live backdrop"),
+        ("liquid-v2", "Liquid glass V2", "One continuous glass strip across the top"),
+        ("liquid-v3", "Liquid glass V3", "Continuous glass with app icons, focused title and workspace details"),
         ("glass", "Glass islands", "Three floating glass groups, colours from the wallpaper")]
 LOGINS = [("keep", "This PC's login screen", "Recommended. Hyprland is pre-selected for you"),
           ("sddm", "Themed login screen (SDDM)", "Animated theme; replaces the current login screen")]
@@ -63,7 +67,8 @@ def gpu_info():
     info = {}
     for line in out.splitlines():
         k, _, v = line.partition("=")
-        info[k] = v.strip('"')
+        values = shlex.split(v)
+        info[k] = values[0] if values else ""
     return info
 
 
@@ -85,10 +90,11 @@ def gpu_names():
 def describe_graphics(info):
     mode = info.get("MODE", "unknown")
     driver = info.get("NVIDIA_DRIVER")
-    if mode == "hybrid-nvidia":
-        text = "Laptop with two GPUs: the built-in one runs the desktop, the NVIDIA one sleeps until a game or heavy app needs it."
-    elif mode == "hybrid-amd":
-        text = "Two GPUs: the built-in one runs the desktop, the AMD one wakes up for games and heavy apps."
+    if mode in ("hybrid-nvidia", "hybrid-amd"):
+        display = info.get("DISPLAY_GPU", "")
+        label = {"amd": "AMD", "nvidia": "NVIDIA", "intel": "Intel"}.get(display)
+        text = (f"Multiple GPUs detected. The connected display currently uses {label} graphics."
+                if label else "Multiple GPUs detected. Graphics selection follows the connected display.")
     elif mode == "nvidia":
         text = "NVIDIA graphics."
     elif mode == "amd":
@@ -122,14 +128,6 @@ def keyboard_layouts():
         pass
     layouts.sort(key=lambda x: x[1].lower())
     return layouts or [("us", "English (US)")], current or "us"
-
-
-def secure_boot():
-    try:
-        out = subprocess.run(["mokutil", "--sb-state"], capture_output=True, text=True, timeout=5).stdout
-        return "enabled" in out
-    except Exception:
-        return False
 
 
 def os_release():
@@ -255,15 +253,15 @@ class Setup(Adw.ApplicationWindow):
         row("Graphics", ("\n".join(names) + "\n" if names else "") + describe_graphics(self.info),
             "warn" if mode == "unknown" else "ok")
 
-        sb = secure_boot()
-        # Fedora builds the driver locally and signs it with a key approved via a password (MOK);
-        # Ubuntu asks for its own MOK password in the terminal, Arch leaves signing to the user
-        self.needs_mok = sb and "nvidia" in mode and not self.info.get("NVIDIA_DRIVER") and self.distro == "fedora"
+        sb = self.info.get("SECURE_BOOT", "?")
+        self.needs_mok = (self.distro == "fedora" and sb == "1"
+                          and "nvidia" in self.info.get("GPUS", "").split()
+                          and not self.info.get("NVIDIA_DRIVER"))
         if self.needs_mok:
             row("Secure Boot", "On. The NVIDIA driver must be approved once at the next start: you'll choose a "
                                "password on the next page and type it on a blue screen after restarting.", "warn")
         else:
-            row("Secure Boot", "On" if sb else "Off", "ok")
+            row("Secure Boot", {"1": "On", "0": "Off"}.get(sb, "Unknown; driver setup will check before installing NVIDIA"), "warn" if sb == "?" else "ok")
 
         free = shutil.disk_usage(Path.home()).free // 1024**3
         row("Free space", f"{free} GB" + ("" if free >= 8 else " — at least 8 GB is needed"), "ok" if free >= 8 else "bad")
@@ -330,9 +328,10 @@ class Setup(Adw.ApplicationWindow):
         self.drv_row = Adw.SwitchRow(title="Install graphics drivers", active=True,
                                      subtitle=", ".join(parts) if parts else "Nothing extra needed for this PC")
         g4.add(self.drv_row)
-        self.mok_row = Adw.PasswordEntryRow(title="Driver key password (8+ characters, needed once at next start)",
+        self.mok_row = Adw.PasswordEntryRow(title="Driver key password (8–16 ASCII letters/digits, used once at next start)",
                                             visible=getattr(self, "needs_mok", False))
         self.mok_row.connect("changed", lambda *_: self.validate_choices())
+        self.drv_row.connect("notify::active", lambda *_: self.validate_choices())
         g4.add(self.mok_row)
         self.base_row = Adw.SwitchRow(title="Reinstall the Hyprland base packages", active=False,
                                       subtitle="Hyprland is already installed; only needed to repair it",
@@ -364,7 +363,7 @@ class Setup(Adw.ApplicationWindow):
     def validate_choices(self):
         ok = True
         if self.mok_row.get_visible() and self.drv_row.get_active():
-            ok = len(self.mok_row.get_text()) >= 8
+            ok = re.fullmatch(r"[A-Za-z0-9]{8,16}", self.mok_row.get_text()) is not None
         self.install_btn.set_sensitive(ok)
 
     # ── 4. installing ──

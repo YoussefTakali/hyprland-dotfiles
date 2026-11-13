@@ -23,6 +23,7 @@ items=(
     "󰖨|Night light|Super+N|$S/Hyprsunset.sh toggle"
     "󰗊|Text grab (OCR)|Super+Alt+T|$U/OcrGrab.sh"
     "󰌾|Lock screen style|4 styles|$U/LockStyle.sh"
+    "󰌾|Login theme|Super+Ctrl+Alt+L|python3 $S/LoginThemes.py"
     "󰌌|Keybinds|Super+H|$S/KeyHints.sh"
     "󰘳|Keyboard shortcuts|add your own|python3 -I $U/Shortcuts.py"
 )

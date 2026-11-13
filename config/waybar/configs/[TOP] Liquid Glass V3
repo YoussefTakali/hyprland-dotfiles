@@ -1,0 +1,103 @@
+// Liquid Glass V3: continuous glass with live window and application details.
+{
+  "include": [
+    "$HOME/.config/waybar/Modules",
+    "$HOME/.config/waybar/ModulesWorkspaces",
+    "$HOME/.config/waybar/ModulesCustom",
+    "$HOME/.config/waybar/ModulesGroups",
+    "$HOME/.config/waybar/UserModules"
+  ],
+  "layer": "top",
+  "exclusive": true,
+  "passthrough": false,
+  "position": "top",
+  "height": 40,
+  "spacing": 3,
+  "fixed-center": true,
+  "reload_style_on_change": true,
+  "margin-top": 8,
+  "margin-left": 12,
+  "margin-right": 12,
+  "modules-left": [
+    "custom/menu",
+    "hyprland/workspaces",
+    "wlr/taskbar",
+    "hyprland/window"
+  ],
+  "modules-center": [
+    "clock"
+  ],
+  "modules-right": [
+    "custom/playerctl",
+    "tray",
+    "network#wifi",
+    "bluetooth#bt",
+    "pulseaudio",
+    "group/hw_drawer",
+    "custom/clipboard",
+    "custom/nightlight",
+    "custom/swaync",
+    "custom/power"
+  ],
+  "hyprland/window": {
+    "format": "{title}",
+    "max-length": 34,
+    "separate-outputs": true,
+    "icon": true,
+    "icon-size": 18,
+    "tooltip": true,
+    "tooltip-format": "{class}\n{title}",
+    "rewrite": {},
+    "fallback": "Desktop"
+  },
+  "wlr/taskbar": {
+    "format": "{icon}",
+    "icon-size": 18,
+    "all-outputs": false,
+    "tooltip": true,
+    "tooltip-format": "{name}\n{title}\n{state}",
+    "on-click": "activate"
+  },
+  "hyprland/workspaces": {
+    "format": "{name}",
+    "active-only": false,
+    "all-outputs": false,
+    "show-special": false,
+    "on-click": "activate",
+    "persistent-workspaces": {
+      "*": 5
+    },
+    "tooltip": true,
+    "tooltips": {
+      "default": "Workspace {name}\n{windows}",
+      "empty": "Workspace {name} · empty"
+    },
+    "window-rewrite-default": "{class}: {title}",
+    "format-window-separator": "\n"
+  },
+  "clock": {
+    "format": "{:%a %d %b · %H:%M}",
+    "format-alt": "{:%A %d %B %Y · %H:%M:%S}",
+    "tooltip-format": "<tt>{calendar}</tt>",
+    "interval": 1
+  },
+  "custom/playerctl": {
+    "max-length": 20
+  },
+  "cpu": {
+    "format": "CPU {usage}%",
+    "interval": 3,
+    "tooltip": true,
+    "tooltip-format": "CPU usage: {usage}%\nLoad: {load}"
+  },
+  "memory": {
+    "format": "RAM {percentage}%",
+    "interval": 5,
+    "tooltip": true,
+    "tooltip-format": "Memory: {used:0.1f} / {total:0.1f} GiB\nAvailable: {avail:0.1f} GiB"
+  },
+  "pulseaudio": {
+    "tooltip": true,
+    "tooltip-format": "Output: {desc}\nVolume: {volume}%\nRight click: choose audio output"
+  }
+}

@@ -66,7 +66,10 @@ d_drivers() {
                 run sudo pacman -S --needed --noconfirm nvidia-open-dkms dkms "${kernels[@]/%/-headers}" \
                     || fail "Couldn't install the NVIDIA driver."
             fi
-            run sudo pacman -S --needed --noconfirm nvidia-utils nvidia-settings libva-nvidia-driver egl-wayland
+            if [[ "$NVIDIA_ARCH" != legacy ]]; then
+                run sudo pacman -S --needed --noconfirm nvidia-utils nvidia-settings libva-nvidia-driver egl-wayland \
+                    || fail "Couldn't install NVIDIA userspace tools."
+            fi
             # keep nouveau out of the initramfs, enable KMS
             if grep -qE '^HOOKS=.*\bkms\b' /etc/mkinitcpio.conf; then
                 sudo cp /etc/mkinitcpio.conf /etc/mkinitcpio.conf.bak

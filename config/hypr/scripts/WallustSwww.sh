@@ -53,6 +53,8 @@ fi
 ln -sf "$wallpaper_path" "$rofi_link" || true
 mkdir -p "$(dirname "$wallpaper_current")"
 cp -f "$wallpaper_path" "$wallpaper_current" || true
+# Decode/resize for the next login while changing wallpapers, never during login.
+python3 "$HOME/.config/hypr/scripts/StartupWallpaperCache.py" >/dev/null 2>&1 &
 
 # Run wallust (silent) to regenerate templates defined in ~/.config/wallust/wallust.toml
 # -s is used in this repo to keep things quiet and avoid extra prompts

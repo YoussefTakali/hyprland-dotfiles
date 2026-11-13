@@ -8,7 +8,7 @@
 # Choices come from the environment (defaults in brackets):
 #   OPT_KB=<xkb layout>        [this PC's]         OPT_KB_VARIANT=<variant> [""]
 #   OPT_LOCK=Slate|Iris|Fog|Cards [Slate]
-#   OPT_BAR=ultimate|adaptive|glass [ultimate: glass bar whose shape follows the theme switcher]
+#   OPT_BAR=ultimate|adaptive|glass|liquid|liquid-v2|liquid-v3 [ultimate: glass bar whose shape follows the theme switcher]
 #   OPT_LOGIN=keep|sddm        [keep: this PC's login screen starts Hyprland]
 #   OPT_DRIVERS=1|0            [1: install the graphics drivers this PC needs]
 #   OPT_MOK_PASSWORD=<pw>      Fedora + Secure Boot: one-time password to approve the NVIDIA driver key at next boot
@@ -54,6 +54,7 @@ done
 # shellcheck source=/dev/null
 . "$HERE/installer/distro/$DISTRO.sh"
 
+[[ "$DISTRO" == fedora ]] || export OPT_MOK_PASSWORD=""
 sudo -n true 2>/dev/null || fail "Administrator access is needed (sudo). Start the installer again and enter your password."
 
 # Base scripts may call chsh (asks for a password) or offer "systemctl reboot"; neither may happen mid-install
@@ -75,6 +76,7 @@ eval "$("$HERE/config/hypr/scripts/GpuInfo.sh")"
 
 # ── 1. prepare ───────────────────────────────────────────────────────────────
 step "Checking this PC"
+note "LOG $LOGFILE"
 d_check || fail "This version of $PRETTY_NAME isn't supported."
 echo "System: $PRETTY_NAME ($DISTRO), graphics: $MODE ($GPUS), Secure Boot: $SECURE_BOOT"
 curl -sfI --max-time 10 "$PING_URL" >/dev/null || fail "No internet connection. Connect to the internet and try again."
@@ -100,11 +102,23 @@ echo "Hyprland ${HYPR_VER:-?}"
 
 # ── 4. graphics drivers ─────────────────────────────────────────────────────
 step "Setting up graphics ($MODE)"
-if (( OPT_DRIVERS )); then d_drivers; else echo "Driver installation skipped (OPT_DRIVERS=0)."; fi
+if (( OPT_DRIVERS )); then
+    if [[ "$DISTRO" == fedora ]]; then
+        python3 "$HERE/installer/gpu-setup.py" --install || fail "Graphics setup failed; see the specific error above."
+    else
+        d_drivers
+    fi
+else
+    echo "Driver installation skipped (OPT_DRIVERS=0); existing drivers retained."
+fi
+unset OPT_MOK_PASSWORD
 
 # ── 5. extra packages ───────────────────────────────────────────────────────
 step "Installing the desktop's apps and tools"
 d_extras
+if [[ "$DISTRO" == fedora ]]; then
+    run bash "$HERE/installer/install-codecs.sh" || fail "Couldn't install or verify HEVC support for video wallpapers."
+fi
 
 # Nerd Font: bar and menu icons are empty boxes without it
 if ! fc-list : family | grep -qi "JetBrainsMono Nerd Font"; then
@@ -135,12 +149,19 @@ ZSH_BIN=$(command -v zsh || true)
 
 # ── 6. configs ──────────────────────────────────────────────────────────────
 step "Installing the desktop's settings"
-mkdir -p "$BACKUP" "$HOME/.config"
-for d in "$HERE"/config/*; do n=$(basename "$d"); [[ -e "$HOME/.config/$n" ]] && cp -a "$HOME/.config/$n" "$BACKUP/"; done
-[[ -f "$HOME/.zshrc" ]] && cp -a "$HOME/.zshrc" "$BACKUP/zshrc"
+mkdir -p "$BACKUP" "$HOME/.config" || fail "Could not create the configuration backup."
+for d in "$HERE"/config/*; do
+    n=$(basename "$d")
+    if [[ -e "$HOME/.config/$n" ]]; then
+        cp -a "$HOME/.config/$n" "$BACKUP/" || fail "Backup failed for $n; refusing to overwrite it."
+    fi
+done
+if [[ -f "$HOME/.zshrc" ]]; then
+    cp -a "$HOME/.zshrc" "$BACKUP/zshrc" || fail "Shell configuration backup failed."
+fi
 echo "Previous settings saved in $BACKUP"
-cp -a "$HERE"/config/. "$HOME/.config/"
-cp -a "$HERE/home/.zshrc" "$HOME/.zshrc"
+cp -a "$HERE"/config/. "$HOME/.config/" || fail "Could not install desktop configuration."
+cp -a "$HERE/home/.zshrc" "$HOME/.zshrc" || fail "Could not install shell configuration."
 grep -rlI "/home/rhast" "$HOME/.config/"{hypr,waybar,rofi,kitty,quickshell,fastfetch,gtk-3.0,gtk-4.0,gtk-theme} 2>/dev/null \
     | xargs -r sed -i "s|/home/rhast|$HOME|g"
 sed -i "s|hello, rhast|hello, $USER|" "$HOME/.config/fastfetch/config-wall.jsonc" 2>/dev/null
@@ -152,12 +173,29 @@ if [[ -d "$HOME/.oh-my-zsh" ]]; then
     mkdir -p "$HOME/.oh-my-zsh/custom/themes" && cp "$HERE/oh-my-zsh/agnosterzak-mocha.zsh-theme" "$HOME/.oh-my-zsh/custom/themes/"
 fi
 mkdir -p "$HOME/.local/share/nautilus-python/extensions" "$HOME/.local/share/applications"
-cp "$HERE/home/nautilus-python/open-in-kitty.py" "$HOME/.local/share/nautilus-python/extensions/"
+mkdir -p "$HOME/.local/share/hypr-login-themes"
+cp -a "$HERE/home/login-themes/." "$HOME/.local/share/hypr-login-themes/" || fail "Could not install the animated login catalogue."
+cp "$HERE/config/quickshell/login-splash/"{JakeLoadingScene,shell}.qml "$HOME/.local/share/hypr-login-themes/" \
+    || fail "Could not install the shared login scene."
+cp "$HERE/home/nautilus-python/open-in-kitty.py" "$HOME/.local/share/nautilus-python/extensions/" || fail "Could not install Nautilus integration."
 sed "s|@HOME@|$HOME|g" "$HERE/home/applications/io.github.YoussefTakali.Shortcuts.desktop" \
     > "$HOME/.local/share/applications/io.github.YoussefTakali.Shortcuts.desktop"
+sed "s|@HOME@|$HOME|g" "$HERE/home/applications/blueman-manager.desktop" \
+    > "$HOME/.local/share/applications/blueman-manager.desktop"
+
+# Firefox customizations (only existing release profiles); preserve their originals.
+for prof in "$HOME"/.mozilla/firefox/*.default-release "$HOME"/.config/mozilla/firefox/*.default-release; do
+    [[ -d "$prof" ]] || continue
+    dest="$BACKUP/firefox/${prof#"$HOME"/}"
+    mkdir -p "$dest" "$prof/chrome"
+    [[ ! -e "$prof/user.js" ]] || cp -a "$prof/user.js" "$dest/"
+    [[ ! -e "$prof/chrome/userChrome.css" ]] || cp -a "$prof/chrome/userChrome.css" "$dest/"
+    cp "$HERE/firefox/userChrome.css" "$prof/chrome/" || fail "Could not install Firefox style."
+    cp "$HERE/firefox/user.js" "$prof/" || fail "Could not install Firefox settings."
+done
 
 # swww was renamed awww (Arch, Ubuntu source build): the scripts call swww, so add shims
-if ! command -v swww >/dev/null && command -v awww >/dev/null; then
+if ! command -v swww >/dev/null && command -v awww >/dev/null && command -v awww-daemon >/dev/null; then
     H="$HOME/.config/hypr"; mkdir -p "$H/bin" "$HOME/.local/bin"
     printf '#!/bin/sh\nexec awww "$@"\n'        > "$H/bin/swww"
     printf '#!/bin/sh\nexec awww-daemon "$@"\n' > "$H/bin/swww-daemon"
@@ -165,12 +203,26 @@ if ! command -v swww >/dev/null && command -v awww >/dev/null; then
     ln -sf "$H/bin/swww" "$HOME/.local/bin/swww"; ln -sf "$H/bin/swww-daemon" "$HOME/.local/bin/swww-daemon"
 fi
 
+for required in Hyprland waybar qs rofi hypridle hyprlock; do
+    command -v "$required" >/dev/null || fail "Required desktop command $required was not installed."
+done
+for required in swww swww-daemon; do
+    command -v "$required" >/dev/null || [[ -x "$HOME/.config/hypr/bin/$required" ]] || fail "Missing wallpaper command $required."
+done
+
 # Hyprland 0.53/0.54 don't read hyprland.lua; they read hyprland.conf directly (the same files)
 if [[ -n "$HYPR_VER" ]] && printf '%s\n0.55.0\n' "$HYPR_VER" | sort -V -C; then
     [[ "$HYPR_VER" == 0.55.0 ]] || { rm -f "$HOME/.config/hypr/hyprland.lua"; echo "Hyprland $HYPR_VER: using hyprland.conf"; }
 fi
 if [[ -n "$HYPR_VER" ]] && printf '%s\n0.53.0\n' "$HYPR_VER" | sort -V -C && [[ "$HYPR_VER" != 0.53.0 ]]; then
     warn "Hyprland $HYPR_VER is older than 0.53: window rules use the newer syntax and some won't apply. Update Hyprland."
+fi
+
+# Older releases can disable automatic HDR globally but lack the per-window rule.
+if [[ -n "$HYPR_VER" && "$HYPR_VER" != 0.56.0 ]] && printf '%s\n0.56.0\n' "$HYPR_VER" | sort -V -C; then
+    H="$HOME/.config/hypr"
+    sed -i '/^windowrule = match:class \^brave-browser\$, no_auto_hdr on$/d' "$H/UserConfigs/WindowRules.conf"
+    sed -i '/^render {/a\  cm_auto_hdr = 0 # older Hyprland lacks a per-window HDR rule' "$H/configs/SystemSettings.conf"
 fi
 
 # ── 7. per-PC settings ──────────────────────────────────────────────────────
@@ -187,7 +239,8 @@ if [[ -n "$kb" && "$kb" != "n/a" ]]; then
     echo "$kb" > "$HOME/.cache/kb_layout"
     echo "Keyboard layout: $kb${kbv:+ ($kbv)}"
 fi
-"$HOME/.config/hypr/scripts/GpuConfig.sh"
+bash "$HOME/.config/hypr/scripts/GpuConfig.sh" || fail "Could not configure the detected graphics device."
+python3 "$HOME/.config/hypr/scripts/StartHyprland.py" --prepare-launcher || warn "Fast launcher cache unavailable; the native launcher will use its normal detection."
 if [[ "$MODE" != nvidia* && "$MODE" != hybrid-nvidia ]]; then      # NVIDIA-only variables break other GPUs
     sed -i -E 's/^(\s*env\s*=\s*(LIBVA_DRIVER_NAME|__GLX_VENDOR_LIBRARY_NAME|NVD_BACKEND),nvidia)/# (no NVIDIA GPU) \1/' \
         "$HOME/.config/hypr/configs/ENVariables.conf" 2>/dev/null
@@ -208,16 +261,19 @@ echo "CPU sensor: ${cpu_hwmon:-none found}"
 # Waybar
 W="$HOME/.config/waybar"
 case "$OPT_BAR" in
+    liquid|liquid-v2|liquid-v3)
+              WAYBAR_SKIP_RELOAD=1 bash "$HOME/.config/hypr/scripts/WaybarMode.sh" "$OPT_BAR" || fail "Could not configure Waybar mode." ;;
     glass)    ln -sfn "$W/configs/[TOP] Glass Islands" "$W/config"
               ln -sfn "$W/style/[Glass] Islands.css" "$W/style.css" ;;
     adaptive) ln -sfn "$W/configs/[TOP] Default Laptop" "$W/config"
               ln -sfn "$W/style/[0 VERTICAL] [Wallust] Adaptive.css" "$W/style.css" ;;
-    *)        if ls /sys/class/power_supply/BAT* >/dev/null 2>&1; then
+    ultimate) if ls /sys/class/power_supply/BAT* >/dev/null 2>&1; then
                   ln -sfn "$W/configs/[TOP] Ultimate Laptop" "$W/config"
               else
                   ln -sfn "$W/configs/[TOP] Ultimate Desktop" "$W/config"
               fi
               ln -sfn "$W/style/[Ultimate] Glass Adaptive.css" "$W/style.css" ;;
+    *)        fail "Unknown Waybar option: $OPT_BAR" ;;
 esac
 echo "Bar: $(basename "$(readlink "$W/config")") + $(basename "$(readlink "$W/style.css")")"
 
@@ -245,10 +301,28 @@ fi
 
 sub 40
 mkdir -p "$HOME/Pictures/wallpapers" "$HOME/.config/hypr/wallpaper_effects"
-WP=$(ls "$HERE"/wallpapers/current.* | head -1)
-cp "$WP" "$HOME/Pictures/wallpapers/"
-cp "$WP" "$HOME/.config/hypr/wallpaper_effects/.wallpaper_current"
-cp -rn "$HERE"/wallpapers/. "$HOME/Pictures/wallpapers/" 2>/dev/null || true
+WP=$(find "$HERE/wallpapers" -maxdepth 1 -type f -name 'current.*' -print -quit)
+[[ -f "$WP" ]] || fail "The bundled wallpaper is missing."
+cp -a --update=none "$HERE/wallpapers/." "$HOME/Pictures/wallpapers/" || fail "Could not install the bundled wallpapers."
+cp "$WP" "$HOME/.config/hypr/wallpaper_effects/.wallpaper_current" || fail "Could not set the startup wallpaper."
+# Give the shared loading scene a still on a fresh checkout without personal media.
+splash="$HOME/.config/quickshell/login-splash/jake.png"
+if [[ ! -f "$splash" ]]; then
+    python3 - "$WP" "$splash" <<'PY_IMAGE' || warn "Could not prepare the loading scene still."
+from PIL import Image
+import sys
+
+with Image.open(sys.argv[1]) as image:
+    image.convert("RGB").save(sys.argv[2], "PNG")
+PY_IMAGE
+fi
+case "$DISTRO" in
+    fedora) run sudo dnf install -y --skip-unavailable gcc pkgconf-pkg-config wayland-devel wayland-protocols-devel ;;
+    arch)   run sudo pacman -S --needed --noconfirm gcc pkgconf wayland wayland-protocols ;;
+    ubuntu) run sudo apt-get install -y gcc pkg-config libwayland-dev wayland-protocols ;;
+esac || warn "Waiting-screen build tools unavailable; using the wallpaper fallback."
+python3 "$HERE/native/startup-wallpaper/build-startup-wallpaper.py"
+python3 "$HOME/.config/hypr/scripts/StartupWallpaperCache.py" || true
 command -v wallust >/dev/null && wallust run "$WP" >/dev/null 2>&1 || true
 python3 -I "$HOME/.config/hypr/scripts/AccentGuard.py" >/dev/null 2>&1 || true   # also builds the Accent-Folders icon theme
 gsettings set org.gnome.desktop.interface color-scheme 'prefer-dark' 2>/dev/null || true
@@ -258,16 +332,13 @@ gsettings set org.gnome.desktop.interface cursor-theme 'Bibata-Modern-Ice' 2>/de
 gsettings set org.blueman.general plugin-list "['!StatusIcon', '!StatusNotifierItem']" 2>/dev/null || true
 kvantummanager --set catppuccin-mocha-blue >/dev/null 2>&1 || true
 xdg-mime default org.gnome.Nautilus.desktop inode/directory 2>/dev/null || true
-for prof in "$HOME"/.mozilla/firefox/*.default-release "$HOME"/.config/mozilla/firefox/*.default-release; do
-    [[ -d "$prof" ]] || continue
-    mkdir -p "$prof/chrome"; cp "$HERE/firefox/userChrome.css" "$prof/chrome/"; cp "$HERE/firefox/user.js" "$prof/"
-done
 
 # ── 8. login screen ─────────────────────────────────────────────────────────
 step "Setting up the login screen"
-SESSION=hyprland
-[[ -f /usr/share/wayland-sessions/hyprland.desktop ]] || SESSION=$(basename "$(ls /usr/share/wayland-sessions/hyprland*.desktop 2>/dev/null | head -1)" .desktop)
-if [[ "$OPT_LOGIN" == sddm ]]; then
+run sudo python3 "$HERE/installer/install-session.py" || fail "Could not install the portable Hyprland session."
+if [[ "$OPT_LOGIN" == sddm && "$DISTRO" == fedora ]]; then
+    run bash "$HERE/installer/session/repair-desktop-login.sh" || fail "Desktop login repair failed."
+elif [[ "$OPT_LOGIN" == sddm ]]; then
     d_sddm
     T=/usr/share/sddm/themes/sddm-astronaut-theme
     [[ -d "$T" ]] || { run sudo git clone -q --depth=1 https://github.com/Keyitdev/sddm-astronaut-theme.git "$T" \
@@ -275,22 +346,16 @@ if [[ "$OPT_LOGIN" == sddm ]]; then
     sudo sed -i 's|^ConfigFile=.*|ConfigFile=Themes/jake_the_dog.conf|' "$T/metadata.desktop" 2>/dev/null
     sudo mkdir -p /etc/sddm.conf.d
     printf '[Theme]\nCurrent=sddm-astronaut-theme\n' | sudo tee /etc/sddm.conf.d/10-theme.conf >/dev/null
-    run sudo bash "$HOME/.config/hypr/UserScripts/sddm-login-fix.sh"
-    [[ "$MODE" == hybrid-* ]] && run sudo bash "$HOME/.config/hypr/UserScripts/gpu-login-screen-fix.sh"
+    run sudo bash "$HOME/.config/hypr/UserScripts/sddm-login-fix.sh" || fail "SDDM configuration failed."
     for dm in "${DM_OTHERS[@]}"; do systemctl is-enabled "$dm" >/dev/null 2>&1 && run sudo systemctl disable "$dm"; done
-    run sudo systemctl enable -f sddm
-    sudo mkdir -p /var/lib/sddm
-    printf '[Last]\nUser=%s\nSession=/usr/share/wayland-sessions/%s.desktop\n' "$USER" "$SESSION" | sudo tee /var/lib/sddm/state.conf >/dev/null
-elif systemctl is-enabled sddm >/dev/null 2>&1; then
-    sudo mkdir -p /var/lib/sddm
-    printf '[Last]\nUser=%s\nSession=/usr/share/wayland-sessions/%s.desktop\n' "$USER" "$SESSION" | sudo tee /var/lib/sddm/state.conf >/dev/null
-    echo "SDDM will start Hyprland for $USER."
-elif systemctl is-enabled gdm >/dev/null 2>&1 || systemctl is-enabled gdm3 >/dev/null 2>&1; then
-    # GNOME's login screen: pre-select Hyprland for this user
-    sudo mkdir -p /var/lib/AccountsService/users
-    printf '[User]\nSession=%s\nSystemAccount=false\n' "$SESSION" | sudo tee "/var/lib/AccountsService/users/$USER" >/dev/null
+    run sudo systemctl enable -f sddm || fail "Couldn't enable SDDM."
+    run sudo python3 "$HERE/installer/select-session.py" "$USER" || fail "Could not select the Hyprland session."
+else
+    run bash "$HERE/installer/session/repair-desktop-login.sh" --user-only || fail "GPU login repair failed."
+    run sudo python3 "$HERE/installer/select-session.py" "$USER" || fail "Could not select the Hyprland session."
     echo "The login screen will start Hyprland for $USER."
-elif ! systemctl is-enabled display-manager >/dev/null 2>&1; then
+fi
+if ! systemctl is-enabled display-manager >/dev/null 2>&1 && [[ "$OPT_LOGIN" != sddm ]]; then
     note "NO_LOGIN_SCREEN"
     echo "No login screen is installed: log in on the console and type Hyprland (or re-run with the SDDM option)."
 fi

@@ -6,9 +6,10 @@
 #
 #   ./install.sh                 everything: Hyprland base, drivers, apps, these configs
 #   ./install.sh --no-base       skip the Hyprland base packages (Hyprland already set up; configs + apps)
+#   ./install.sh --base          explicitly install the Hyprland base packages
 #   ./install.sh --no-drivers    don't touch graphics drivers
 #   ./install.sh --sddm          also switch the login screen to SDDM with the Jake (sddm-astronaut) theme
-#   ./install.sh --bar=ultimate|adaptive|glass     bar style (default: ultimate)
+#   ./install.sh --bar=ultimate|adaptive|glass|liquid|liquid-v2|liquid-v3   bar style (default: ultimate)
 #   ./install.sh --lock=Slate|Iris|Fog|Cards       lock screen style (default: Slate)
 #   ./install.sh --kb=<layout>   keyboard layout (default: this PC's)
 #   ./install.sh --jack-fix      keep the 3.5mm jack output on when the PC's jack detection is broken
@@ -18,8 +19,10 @@ set -euo pipefail
 HERE="$(cd "$(dirname "$0")" && pwd)"
 
 export OPT_SKIP_BASE=0 OPT_DRIVERS=1 OPT_LOGIN=keep OPT_BAR=ultimate OPT_LOCK=Slate OPT_KB="" OPT_JACK_FIX=0
+if command -v Hyprland >/dev/null; then OPT_SKIP_BASE=1; fi
 for a in "$@"; do
     case "$a" in
+        --base)       OPT_SKIP_BASE=0 ;;
         --no-base)    OPT_SKIP_BASE=1 ;;
         --no-drivers) OPT_DRIVERS=0 ;;
         --sddm)       OPT_LOGIN=sddm ;;
@@ -27,7 +30,7 @@ for a in "$@"; do
         --bar=*)      OPT_BAR=${a#*=} ;;
         --lock=*)     OPT_LOCK=${a#*=} ;;
         --kb=*)       OPT_KB=${a#*=} ;;
-        -h|--help)    sed -n '2,16p' "$0"; exit 0 ;;
+        -h|--help)    sed -n '2,17p' "$0"; exit 0 ;;
         *) echo "unknown option: $a (see --help)"; exit 1 ;;
     esac
 done
@@ -35,7 +38,15 @@ done
 [[ $EUID -ne 0 ]] || { echo "Run as your normal user, not root (sudo is used where needed)."; exit 1; }
 echo "Administrator password (used for installing packages):"
 sudo -v || exit 1
-while true; do sudo -n true; sleep 50; kill -0 "$$" 2>/dev/null || exit; done 2>/dev/null &   # keep sudo alive
+(while sleep 45; do sudo -n -v || exit; done) >/dev/null 2>&1 </dev/null &
+keeper=$!
+trap 'kill "$keeper" 2>/dev/null || true' EXIT
+
+# Keep progress records available to callers that capture stdout.
+if [[ ! -t 1 ]]; then
+    bash "$HERE/installer/backend.sh"
+    exit
+fi
 
 # Pretty-print the backend's progress lines; everything else is shown as-is (and is in the log file)
 bash "$HERE/installer/backend.sh" | while IFS= read -r line; do

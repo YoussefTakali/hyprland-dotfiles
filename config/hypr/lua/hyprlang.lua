@@ -649,6 +649,40 @@ function M.load(path)
     if #exec_once > 0 then
         local cmds = exec_once
         hl.on("hyprland.start", function()
+            -- Native library selection applies to this compositor only. Child
+            -- applications inherit the original loader path and no probe opt-in.
+            local previousLD = os.getenv("HYPRLAND_NATIVE_PREVIOUS_LD_LIBRARY_PATH")
+            if previousLD ~= nil then
+                hl.env("LD_LIBRARY_PATH", previousLD)
+                hl.env("AQ_DRM_CACHED_MODES_DEADLINE", "")
+            end
+            -- Paint before launching Qt/GTK apps and their competing GPU contexts.
+            -- Retain the configured order if no startup wallpaper helper is present.
+            local paint, remaining = nil, {}
+            for _, c in ipairs(cmds) do
+                if c:match("/scripts/StartupWallpaper%.sh$") and not paint then paint = c
+                else remaining[#remaining + 1] = c end
+            end
+            if paint then
+                -- Start applications as soon as the first still is submitted;
+                -- allow a bounded fallback when the helper exits or fails.
+                local body = {
+                    'readydir=$(mktemp -d "${XDG_RUNTIME_DIR:-/tmp}/hypr-ready.XXXXXX") || readydir=',
+                    'if [[ -f "$HOME/.config/quickshell/login-splash/shell.qml" ]]; then mkdir -p "$HOME/.local/state/session-startup"; QT_NO_XDG_DESKTOP_PORTAL=1 JAKE_SPLASH_MAPPED="${readydir:+$readydir/splash}" JAKE_SPLASH_READY="${readydir:+$readydir/desktop}" qs -n --log-times --log-rules qml.info=true -p "$HOME/.config/quickshell/login-splash/shell.qml" >"$HOME/.local/state/session-startup/jake-splash.log" 2>&1 & fi',
+                    'JAKE_SPLASH_MAPPED="${readydir:+$readydir/splash}" JAKE_DESKTOP_READY="${readydir:+$readydir/desktop}" ' .. paint .. ' --still-only --ready-file "${readydir:+$readydir/ready}" &',
+                    'paint_pid=$!',
+                    'for ((i=0; i<300; i++)); do [[ -z "$readydir" || -f "$readydir/ready" ]] && break; kill -0 "$paint_pid" 2>/dev/null || break; sleep 0.01; done',
+                    'if [[ -f "$HOME/.config/hypr/scripts/SessionInit.sh" ]]; then bash "$HOME/.config/hypr/scripts/SessionInit.sh" --prepare-only || true; fi',
+                }
+                for _, c in ipairs(remaining) do body[#body + 1] = "(\n" .. c .. "\n) &" end
+                body[#body + 1] = 'wait "$paint_pid" || true'
+                body[#body + 1] = 'if [[ -n "$readydir" ]]; then (sleep 9; rm -f "$readydir/ready" "$readydir/splash" "$readydir/desktop"; rmdir "$readydir" 2>/dev/null || true) </dev/null >/dev/null 2>&1 & fi'
+                body[#body + 1] = 'bash "$HOME/.config/hypr/UserScripts/LiveWallpaper.sh" --restore &'
+                local script = table.concat(body, "\n")
+                local quoted = "'" .. script:gsub("'", "'\\''") .. "'"
+                pcall(hl.exec_cmd, "/usr/bin/bash -c " .. quoted)
+                return
+            end
             for _, c in ipairs(cmds) do pcall(hl.exec_cmd, c) end
         end)
     end

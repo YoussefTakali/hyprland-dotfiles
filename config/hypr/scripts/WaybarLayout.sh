@@ -9,12 +9,11 @@ waybar_layouts="$HOME/.config/waybar/configs"
 waybar_config="$HOME/.config/waybar/config"
 SCRIPTSDIR="$HOME/.config/hypr/scripts"
 rofi_config="$HOME/.config/rofi/config-waybar-layout.rasi"
-msg=' 🎌 NOTE: Some waybar LAYOUT NOT fully compatible with some STYLES'
+msg='Choose which widgets appear and where'
 
 # Apply selected configuration
 apply_config() {
-    ln -sf "$waybar_layouts/$1" "$waybar_config"
-    "${SCRIPTSDIR}/Refresh.sh" &
+    bash "${SCRIPTSDIR}/WaybarMode.sh" --layout "$1"
 }
 
 main() {
@@ -40,7 +39,7 @@ main() {
 
     # Launch rofi with the annotated list, pre‑selecting the active row
     choice=$(printf '%s\n' "${options[@]}" \
-        | rofi -i -dmenu \
+        | rofi -i -dmenu -no-custom \
                -config "$rofi_config" \
                -mesg "$msg" \
                -selected-row "$default_row"
@@ -54,18 +53,12 @@ main() {
 
     case "$choice" in
         "no panel")
-            pgrep -x "waybar" && pkill waybar || true
+            bash "${SCRIPTSDIR}/WaybarMode.sh" --hide
             ;;
         *)
             apply_config "$choice"
             ;;
     esac
 }
-
-# Kill Rofi if already running before execution
-if pgrep -x "rofi" >/dev/null; then
-    pkill rofi
-    #exit 0
-fi
 
 main

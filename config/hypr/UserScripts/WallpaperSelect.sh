@@ -64,6 +64,10 @@ mapfile -d '' PICS < <(find -L "${wallDIR}" -type f \( \
   -iname "*.bmp" -o -iname "*.tiff" -o -iname "*.webp" -o \
   -iname "*.mp4" -o -iname "*.mkv" -o -iname "*.mov" -o -iname "*.webm" \) -print0)
 
+if (( ${#PICS[@]} == 0 )); then
+  notify-send 'Wallpapers' "No images or videos found in $wallDIR"
+  exit 0
+fi
 RANDOM_PIC="${PICS[$((RANDOM % ${#PICS[@]}))]}"
 RANDOM_PIC_NAME=". random"
 
@@ -142,31 +146,6 @@ set_sddm_wallpaper() {
   fi
 }
 
-modify_startup_config() {
-  local selected_file="$1"
-  local startup_config="$HOME/.config/hypr/UserConfigs/Startup_Apps.conf"
-
-  # Check if it's a live wallpaper (video)
-  if [[ "$selected_file" =~ \.(mp4|mkv|mov|webm)$ ]]; then
-    # For video wallpapers:
-    sed -i '/^\s*exec-once\s*=\s*swww-daemon\s*--format\s*xrgb\s*$/s/^/\#/' "$startup_config"
-    sed -i '/^\s*#\s*exec-once\s*=\s*mpvpaper\s*.*$/s/^#\s*//;' "$startup_config"
-
-    # Update the livewallpaper variable with the selected video path (using $HOME)
-    selected_file="${selected_file/#$HOME/\$HOME}" # Replace /home/user with $HOME
-    sed -i "s|^\$livewallpaper=.*|\$livewallpaper=\"$selected_file\"|" "$startup_config"
-
-    echo "Configured for live wallpaper (video)."
-  else
-    # For image wallpapers:
-    sed -i '/^\s*#\s*exec-once\s*=\s*swww-daemon\s*--format\s*xrgb\s*$/s/^\s*#\s*//;' "$startup_config"
-
-    sed -i '/^\s*exec-once\s*=\s*mpvpaper\s*.*$/s/^/\#/' "$startup_config"
-
-    echo "Configured for static wallpaper (image)."
-  fi
-}
-
 # Apply Image Wallpaper
 apply_image_wallpaper() {
   local image_path="$1"
@@ -174,18 +153,20 @@ apply_image_wallpaper() {
   kill_wallpaper_for_image
   rm -f "$HOME/.config/hypr/wallpaper_effects/.live_wallpaper"   # an image replaces the video for good
 
-  if ! pgrep -x "swww-daemon" >/dev/null; then
-    echo "Starting swww-daemon..."
-    swww-daemon --format xrgb &
+  source "$SCRIPTSDIR/WallpaperDaemonReady.sh"
+  if ! wallpaper_daemon_ready; then
+    echo "Starting wallpaper daemon..."
+    swww-daemon --no-cache &
+    for ((i=0; i<50; i++)); do
+      wallpaper_daemon_ready && break
+      sleep 0.05
+    done
   fi
-
-  swww img -o "$focused_monitor" "$image_path" $SWWW_PARAMS
+  swww img -o "$focused_monitor" "$image_path" $SWWW_PARAMS || return 1
 
   # Run additional scripts (pass the image path to avoid cache race conditions)
   "$SCRIPTSDIR/WallustSwww.sh" "$image_path"
-  sleep 2
   "$SCRIPTSDIR/Refresh.sh"
-  sleep 1
 
   set_sddm_wallpaper
 }
@@ -198,8 +179,6 @@ apply_video_wallpaper() {
     notify-send -i "$iDIR/error.png" "E-R-R-O-R" "mpvpaper not found"
     return 1
   fi
-  kill_wallpaper_for_video
-
   # Video wallpaper: mpvpaper + colors / lock-screen image from a frame (UserScripts/LiveWallpaper.sh)
   "$HOME/.config/hypr/UserScripts/LiveWallpaper.sh" "$video_path"
 }
@@ -230,8 +209,8 @@ main() {
     exit 1
   fi
 
-  # Modify the Startup_Apps.conf file based on wallpaper type
-  modify_startup_config "$selected_file"
+  # Login is owned by StartupWallpaper.sh and the saved .live_wallpaper state.
+  # Never enable a second daemon/player through legacy exec-once rewrites.
 
   # **CHECK FIRST** if it's a video or an image **before calling any function**
   if [[ "$selected_file" =~ \.(mp4|mkv|mov|webm|MP4|MKV|MOV|WEBM)$ ]]; then

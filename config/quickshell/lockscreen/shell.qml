@@ -70,7 +70,7 @@ ShellRoot {
     signal failed()
 
     function tryUnlock(password) {
-        if (busy || password.length === 0) return;
+        if (busy || unlocking || password.length === 0) return;
         if (preview) { unlocking = true; return; }   // preview: just play the success animation
         pendingPassword = password;
         busy = true;
@@ -89,6 +89,7 @@ ShellRoot {
             }
         }
         onCompleted: result => {
+            root.pendingPassword = "";
             root.busy = false;
             if (result === PamResult.Success) {
                 root.unlocking = true;
@@ -100,6 +101,7 @@ ShellRoot {
             }
         }
         onError: error => {
+            root.pendingPassword = "";
             root.busy = false;
             root.failText = "Couldn't check the password. Try again.";
             root.failed();
@@ -108,7 +110,7 @@ ShellRoot {
 
     Timer {
         id: unlockTimer
-        interval: 760                       // let the iris finish opening, then really unlock
+        interval: 180                       // brief transition after PAM succeeds
         onTriggered: { lock.locked = false; Qt.callLater(Qt.quit); }
     }
 
