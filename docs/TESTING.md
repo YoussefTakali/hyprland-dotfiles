@@ -7,9 +7,8 @@ PYTHONDONTWRITEBYTECODE=1 python3 -m unittest discover -s tests -p 'test_*.py'
 ```
 
 Use the system Python with Pillow, PyGObject, GTK 3 and Blueman. Native coverage
-uses C and C++ compilers, pkg-config or pkgconf, Wayland development headers and
-protocols, the Wayland scanner, and libdrm development headers. The startup
-queue test uses a Lua 5.1-compatible shared library. Tests report skips for
+uses a C compiler, pkg-config or pkgconf, Wayland development headers and
+protocols, and the Wayland scanner. The startup queue test uses a Lua 5.1-compatible shared library. Tests report skips for
 unavailable optional native dependencies.
 
 The suite exercises both installer entry points in temporary homes, mocks

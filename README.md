@@ -125,9 +125,9 @@ it is never bypassed and Secure Boot is never disabled.
 
 The packaged Hyprland session remains available alongside **Hyprland (Desktop
 dotfiles)**. The installer preselects the latter for GDM/SDDM. Monitor mode matching
-and the experimental Aquamarine patch are separate optional tools.
+is optional.
 
-Existing configs are backed up to `~/.config-backup-<date>/` before replacement.
+The installer backs up existing settings before replacing them.
 
 ## Keyboard Shortcuts
 

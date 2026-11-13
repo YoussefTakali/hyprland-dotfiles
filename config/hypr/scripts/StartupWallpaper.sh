@@ -100,9 +100,6 @@ fi
 if [[ $painted == true && -f $selector ]] && { [[ ${selection[0]:-} == "$HOME/.config/hypr/wallpaper_effects/.wallpaper_current" || $refresh_cache == true ]] || [[ -f $HOME/.cache/hypr-startup-wallpaper/provisional ]]; }; then
     python3 "$selector" </dev/null >/dev/null 2>&1 9>&- &
 fi
-if [[ $painted == true && ${HYPRLAND_NATIVE_ACTIVE:-} == 1 ]]; then
-    rm -f "$state/native-trial.json"
-fi
 if [[ ${HYPRLAND_DEFERRED_CURSOR_SYNC:-} == 1 ]]; then
     /usr/bin/hyprctl eval 'hl.config({cursor={sync_gsettings_theme=true}}); hl.env("HYPRLAND_DEFERRED_CURSOR_SYNC","0")' >/dev/null 2>&1 || true
 fi

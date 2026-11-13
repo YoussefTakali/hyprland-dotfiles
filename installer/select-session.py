@@ -28,12 +28,12 @@ def write_config(path, config, owner=None):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('user')
-    parser.add_argument('--session', choices=['hyprland-dotfiles','hyprland-dotfiles-trial'], default='hyprland-dotfiles')
     args = parser.parse_args()
+    session = "hyprland-dotfiles"
     if os.geteuid() != 0:
         raise SystemExit("Administrator access and an account name are required.")
     user = pwd.getpwnam(args.user).pw_name
-    if not (Path('/usr/share/wayland-sessions')/(args.session+'.desktop')).is_file():
+    if not (Path('/usr/share/wayland-sessions')/(session+'.desktop')).is_file():
         raise SystemExit('The requested session entry has not been installed.')
     path = Path("/var/lib/AccountsService/users") / user
     config = configparser.ConfigParser(interpolation=None, strict=False)
@@ -45,8 +45,8 @@ if __name__ == "__main__":
         shutil.copy2(path, backup / user)
     if not config.has_section("User"):
         config.add_section("User")
-    config.set("User", "Session", args.session)
-    config.set("User", "XSession", args.session)
+    config.set("User", "Session", session)
+    config.set("User", "XSession", session)
     write_config(path, config)
     # "Keep login screen" may mean an existing SDDM installation rather than GDM.
     manager = Path('/etc/systemd/system/display-manager.service')
@@ -62,7 +62,7 @@ if __name__ == "__main__":
         if not saved.has_section('Last'):
             saved.add_section('Last')
         saved.set('Last', 'User', user)
-        saved.set('Last', 'Session', '/usr/share/wayland-sessions/'+args.session+'.desktop')
+        saved.set('Last', 'Session', '/usr/share/wayland-sessions/'+session+'.desktop')
         state.parent.mkdir(parents=True, exist_ok=True)
         with state.open('w') as stream:
             saved.write(stream, space_around_delimiters=False)

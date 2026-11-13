@@ -1,2 +1,0 @@
-# Unified patches require a space on blank context lines.
-experiments/aquamarine-startup/*.patch whitespace=-blank-at-eol,-blank-at-eof

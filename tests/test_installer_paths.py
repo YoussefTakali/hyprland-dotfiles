@@ -14,7 +14,7 @@ REPO = Path(__file__).resolve().parents[1]
 
 
 class InstallerPaths(unittest.TestCase):
-    def exercise(self, terminal):
+    def exercise(self, terminal, existing=True):
         with tempfile.TemporaryDirectory(prefix="installer-path-") as directory:
             home = Path(directory)
             stubs = home / "stubs"
@@ -40,12 +40,13 @@ class InstallerPaths(unittest.TestCase):
                 path.write_text('#!/bin/sh\n' + body)
                 path.chmod(0o755)
             # A real previous configuration and Firefox profile must survive in backups.
-            previous = home / '.config/hypr'
-            previous.mkdir(parents=True)
-            (previous / 'personal.txt').write_text('keep my old desktop\n')
-            profile = home / '.mozilla/firefox/test.default-release'
-            profile.mkdir(parents=True)
-            (profile / 'user.js').write_text('// previous preferences\n')
+            if existing:
+                previous = home / '.config/hypr'
+                previous.mkdir(parents=True)
+                (previous / 'personal.txt').write_text('keep my old desktop\n')
+                profile = home / '.mozilla/firefox/test.default-release'
+                profile.mkdir(parents=True)
+                (profile / 'user.js').write_text('// previous preferences\n')
             # A loaded NVIDIA fixture makes this test independent of host GPUs.
             sysfs = home / 'sys'
             device = sysfs / 'bus/pci/devices/0000:99:00.0'
@@ -77,9 +78,13 @@ class InstallerPaths(unittest.TestCase):
             self.assertTrue((home/'.local/share/hypr-login-themes/JakeLoadingScene.qml').is_file())
             self.assertTrue((home/'.local/share/hypr-login-themes/shell.qml').is_file())
             self.assertTrue((home/'.config/hypr/UserConfigs/GPU.conf').exists())
-            backup = next(home.glob('.config-backup-*'))
-            self.assertEqual((backup/'hypr/personal.txt').read_text(), 'keep my old desktop\n')
-            self.assertEqual((backup/'firefox/.mozilla/firefox/test.default-release/user.js').read_text(), '// previous preferences\n')
+            if existing:
+                backup = next(home.glob('.config-backup-*'))
+                self.assertEqual((backup/'hypr/personal.txt').read_text(), 'keep my old desktop\n')
+                self.assertEqual((backup/'firefox/.mozilla/firefox/test.default-release/user.js').read_text(), '// previous preferences\n')
+            else:
+                self.assertEqual(list(home.glob(".config-backup-*")), [])
+                self.assertNotIn("@@NOTE BACKUP", result.stdout)
             boundaries = (home/'boundaries').read_text()
             self.assertIn('installer/install-session.py', boundaries)
             if terminal:
@@ -95,7 +100,7 @@ class InstallerPaths(unittest.TestCase):
         self.exercise(True)
 
     def test_graphical_backend_and_sddm_selection(self):
-        self.exercise(False)
+        self.exercise(False, existing=False)
 
 
 if __name__ == '__main__':

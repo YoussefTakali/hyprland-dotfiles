@@ -649,13 +649,6 @@ function M.load(path)
     if #exec_once > 0 then
         local cmds = exec_once
         hl.on("hyprland.start", function()
-            -- Native library selection applies to this compositor only. Child
-            -- applications inherit the original loader path and no probe opt-in.
-            local previousLD = os.getenv("HYPRLAND_NATIVE_PREVIOUS_LD_LIBRARY_PATH")
-            if previousLD ~= nil then
-                hl.env("LD_LIBRARY_PATH", previousLD)
-                hl.env("AQ_DRM_CACHED_MODES_DEADLINE", "")
-            end
             -- Paint before launching Qt/GTK apps and their competing GPU contexts.
             -- Retain the configured order if no startup wallpaper helper is present.
             local paint, remaining = nil, {}

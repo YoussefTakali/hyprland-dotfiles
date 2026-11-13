@@ -277,17 +277,13 @@ Lua regression test checks the application/daemon/video ordering. A new login
 is needed to measure the real effect; this change cannot make the compositor
 initialize before it owns the display.
 
-The existing experimental Aquamarine connector-cache candidate passed the
-isolated C++ fallback tests on November 9. This does not establish its behavior
-on a real DRM handoff, so it remains disabled; the packaged backend is used.
-
 ## November 9 full integration review
 
 See [the current investigation report](TESTING.md) and
 [desktop documentation](README.md). Both installer entry points now use one
 backend and a separate portable display-manager session. PCI-first discovery,
 Secure Boot ordering/key checks, multi-GPU fallback and the animated wallpaper
-indicator are integrated. The optional Aquamarine backend patch remains disabled.
+indicator are integrated.
 
 The complete supplied video has approximately 5.42 seconds of visible blackout.
 It cannot be conclusively matched to the saved boot identity. The last software

@@ -145,17 +145,18 @@ ZSH_BIN=$(command -v zsh || true)
 
 # ── 6. configs ──────────────────────────────────────────────────────────────
 step "Installing the desktop's settings"
-mkdir -p "$BACKUP" "$HOME/.config" || fail "Could not create the configuration backup."
+mkdir -p "$HOME/.config" || fail "Could not create the configuration directory."
 for d in "$HERE"/config/*; do
     n=$(basename "$d")
     if [[ -e "$HOME/.config/$n" ]]; then
+        mkdir -p "$BACKUP" || fail "Could not create the configuration backup."
         cp -a "$HOME/.config/$n" "$BACKUP/" || fail "Backup failed for $n; refusing to overwrite it."
     fi
 done
 if [[ -f "$HOME/.zshrc" ]]; then
+    mkdir -p "$BACKUP" || fail "Could not create the configuration backup."
     cp -a "$HOME/.zshrc" "$BACKUP/zshrc" || fail "Shell configuration backup failed."
 fi
-echo "Previous settings saved in $BACKUP"
 cp -a "$HERE"/config/. "$HOME/.config/" || fail "Could not install desktop configuration."
 cp -a "$HERE/home/.zshrc" "$HOME/.zshrc" || fail "Could not install shell configuration."
 grep -rlI "/home/rhast" "$HOME/.config/"{hypr,waybar,rofi,kitty,quickshell,fastfetch,gtk-3.0,gtk-4.0,gtk-theme} 2>/dev/null \
@@ -183,9 +184,10 @@ sed "s|@HOME@|$HOME|g" "$HERE/home/applications/blueman-manager.desktop" \
 for prof in "$HOME"/.mozilla/firefox/*.default-release "$HOME"/.config/mozilla/firefox/*.default-release; do
     [[ -d "$prof" ]] || continue
     dest="$BACKUP/firefox/${prof#"$HOME"/}"
-    mkdir -p "$dest" "$prof/chrome" || fail "Could not prepare Firefox backup."
+    mkdir -p "$prof/chrome" || fail "Could not prepare Firefox configuration."
     for original in "$prof/user.js" "$prof/chrome/userChrome.css"; do
         if [[ -e "$original" || -L "$original" ]]; then
+            mkdir -p "$dest" || fail "Could not prepare Firefox backup."
             cp -aL -- "$original" "$dest/" || fail "Could not back up Firefox settings at $original."
         fi
     done
@@ -347,6 +349,7 @@ if [[ "$OPT_LOGIN" == sddm ]]; then
     scene="$HOME/.config/quickshell/login-splash"
     cp /usr/share/sddm/themes/sddm-astronaut-theme/Components/jake.png "$scene/jake.png" || fail "Could not install the desktop login artwork."
     if [[ -f "$scene/transition.png" ]]; then
+        mkdir -p "$BACKUP" || fail "Could not create the configuration backup."
         mv "$scene/transition.png" "$BACKUP/previous-transition.png" || fail "Could not back up the previous transition frame."
     fi
     python3 "$HOME/.config/hypr/scripts/StartupWallpaperCache.py"
@@ -366,7 +369,7 @@ fi
 # ── 9. finish ───────────────────────────────────────────────────────────────
 step "Finishing"
 "$HOME/.config/hypr/scripts/GpuInfo.sh"
-note "BACKUP $BACKUP"
+[[ ! -d "$BACKUP" ]] || note "BACKUP $BACKUP"
 note "LOG $LOGFILE"
 echo "@@PROGRESS 100"
 echo "@@DONE"
