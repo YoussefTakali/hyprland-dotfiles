@@ -44,6 +44,7 @@ run()  { echo "\$ $*"; "$@"; }
 
 # ── which distro ────────────────────────────────────────────────────────────
 OS_RELEASE=${OS_RELEASE:-/etc/os-release}     # overridable for testing
+SDDM_THEME_DIR=${SDDM_THEME_DIR:-/usr/share/sddm/themes/sddm-astronaut-theme}   # where install-sddm.sh puts the theme; overridable for testing
 # shellcheck source=/dev/null
 . "$OS_RELEASE"
 DISTRO=""
@@ -72,7 +73,18 @@ chmod +x "$SHIM"/*
 export PATH="$SHIM:$PATH"
 trap 'rm -rf "$SHIM"' EXIT
 
-eval "$("$HERE/config/hypr/scripts/GpuInfo.sh")"
+# GPU detection and the setup helpers are Python; minimal installs (e.g. Arch) may not have it yet
+if ! command -v python3 >/dev/null; then
+    case "$DISTRO" in
+        arch)   run sudo pacman -S --needed --noconfirm python ;;
+        fedora) run sudo dnf install -y python3 ;;
+        ubuntu) run sudo apt-get install -y python3 ;;
+    esac
+    command -v python3 >/dev/null || fail "Python 3 is needed and couldn't be installed (see the log)."
+fi
+GPU_FACTS=$("$HERE/config/hypr/scripts/GpuInfo.sh") || fail "Couldn't detect this PC's graphics (see the log)."
+eval "$GPU_FACTS"
+[[ -n "${MODE:-}" ]] || fail "Couldn't detect this PC's graphics (see the log)."
 
 # ── 1. prepare ───────────────────────────────────────────────────────────────
 step "Checking this PC"
@@ -347,7 +359,9 @@ if [[ "$OPT_LOGIN" == sddm ]]; then
     d_sddm
     run sudo bash "$HERE/installer/session/install-sddm.sh" "$HOME/.local/share/hypr-login-themes" || fail "Could not install the SDDM theme."
     scene="$HOME/.config/quickshell/login-splash"
-    cp /usr/share/sddm/themes/sddm-astronaut-theme/Components/jake.png "$scene/jake.png" || fail "Could not install the desktop login artwork."
+    artwork="$SDDM_THEME_DIR/Components/jake.png"
+    [[ -f "$artwork" ]] || fail "The SDDM theme is missing its login artwork ($artwork); see the log."
+    cp "$artwork" "$scene/jake.png" || fail "Could not install the desktop login artwork."
     if [[ -f "$scene/transition.png" ]]; then
         mkdir -p "$BACKUP" || fail "Could not create the configuration backup."
         mv "$scene/transition.png" "$BACKUP/previous-transition.png" || fail "Could not back up the previous transition frame."
@@ -369,6 +383,18 @@ fi
 # ── 9. finish ───────────────────────────────────────────────────────────────
 step "Finishing"
 "$HOME/.config/hypr/scripts/GpuInfo.sh"
+# Let Hyprland parse the installed config (strict: compatibility problems count too) before the first login
+cfg="$HOME/.config/hypr/hyprland.lua"
+[[ -f "$cfg" ]] || cfg="$HOME/.config/hypr/hyprland.conf"
+verify=$(HYPRLANG_STRICT=1 timeout 60 Hyprland --verify-config --config "$cfg" 2>&1 </dev/null)
+if grep -q 'Config parsing result' <<<"$verify"; then
+    if grep -qx 'config ok' <<<"$verify"; then
+        echo "Hyprland config check: ok"
+    else
+        sed -n '/Config parsing result/,$p' <<<"$verify"
+        warn "Hyprland reported problems in the installed config (details in the log); the desktop may look different until they are fixed."
+    fi
+fi
 [[ ! -d "$BACKUP" ]] || note "BACKUP $BACKUP"
 note "LOG $LOGFILE"
 echo "@@PROGRESS 100"

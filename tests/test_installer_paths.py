@@ -14,7 +14,7 @@ REPO = Path(__file__).resolve().parents[1]
 
 
 class InstallerPaths(unittest.TestCase):
-    def exercise(self, terminal, existing=True):
+    def exercise(self, terminal, existing=True, config_problem=False):
         with tempfile.TemporaryDirectory(prefix="installer-path-") as directory:
             home = Path(directory)
             stubs = home / "stubs"
@@ -27,7 +27,10 @@ class InstallerPaths(unittest.TestCase):
                 "fc-list": 'echo "JetBrainsMono Nerd Font"\n',
                 "rpm": 'case "$*" in *%fedora*) echo 45;; esac\nexit 0\n',
                 "mpv": 'echo "hevc HEVC decoder"\n',
-                "Hyprland": 'case "$*" in *version-json*) echo \'{"flags":[]}\';; esac\nexit 0\n',
+                "Hyprland": ('case "$*" in *version-json*) echo \'{"flags":[]}\';; '
+                             '*verify-config*) printf "======== Config parsing result:\\n\\n%s\\n" '
+                             + ("'UserSettings.conf:3: unknown option'" if config_problem else "'config ok'")
+                             + ';; esac\nexit 0\n'),
                 "start-hyprland": 'echo "--no-nixgl"\n',
                 "gsettings": 'exit 0\n', "xdg-mime": 'exit 0\n',
                 "pkill": 'exit 1\n', "gtk-update-icon-cache": 'exit 0\n',
@@ -59,12 +62,16 @@ class InstallerPaths(unittest.TestCase):
             version = sysfs / 'module/nvidia/version'
             version.parent.mkdir(parents=True)
             version.write_text('615.78.08')
+            # install-sddm.sh runs behind the sudo stub, so provide the theme it would have installed.
+            theme = home / 'sddm-astronaut-theme'
+            (theme / 'Components').mkdir(parents=True)
+            (theme / 'Components/jake.png').write_bytes(b'\x89PNG fixture')
             runtime = home / 'runtime'
             runtime.mkdir()
             os_release = home / 'os-release'
             os_release.write_text('ID=fedora\nPRETTY_NAME="Fedora test fixture"\n')
             env = dict(os.environ, HOME=directory, PATH=str(stubs) + ':' + os.environ['PATH'],
-                       OS_RELEASE=str(os_release), XDG_RUNTIME_DIR=str(runtime),
+                       OS_RELEASE=str(os_release), XDG_RUNTIME_DIR=str(runtime), SDDM_THEME_DIR=str(theme),
                        OPT_SKIP_BASE='1', OPT_DRIVERS='1', OPT_LOGIN='sddm', OPT_BAR='glass', OPT_KB='us', GPU_SYSFS_ROOT=str(sysfs))
             command = (['bash', str(REPO/'install.sh'), '--no-base', '--no-drivers', '--bar=liquid-v3'] if terminal
                        else ['bash', str(REPO/'installer/backend.sh')])
@@ -78,6 +85,12 @@ class InstallerPaths(unittest.TestCase):
             self.assertTrue((home/'.local/share/hypr-login-themes/JakeLoadingScene.qml').is_file())
             self.assertTrue((home/'.local/share/hypr-login-themes/shell.qml').is_file())
             self.assertTrue((home/'.config/hypr/UserConfigs/GPU.conf').exists())
+            if config_problem:
+                self.assertIn('@@WARN Hyprland reported problems in the installed config', result.stdout)
+                self.assertIn('UserSettings.conf:3: unknown option', result.stdout)
+            else:
+                self.assertIn('Hyprland config check: ok', result.stdout)
+                self.assertNotIn('@@WARN Hyprland reported problems', result.stdout)
             if existing:
                 backup = next(home.glob('.config-backup-*'))
                 self.assertEqual((backup/'hypr/personal.txt').read_text(), 'keep my old desktop\n')
@@ -101,6 +114,9 @@ class InstallerPaths(unittest.TestCase):
 
     def test_graphical_backend_and_sddm_selection(self):
         self.exercise(False, existing=False)
+
+    def test_config_problems_are_reported_without_failing(self):
+        self.exercise(False, existing=False, config_problem=True)
 
 
 if __name__ == '__main__':

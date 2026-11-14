@@ -116,6 +116,10 @@ it is never bypassed and Secure Boot is never disabled.
 
 The installer registers and selects **Hyprland (Desktop dotfiles)** for GDM or SDDM alongside the packaged session. Choose the SDDM option to install the shared login scene and theme presets. The installer backs up existing settings before replacing them.
 
+Before changing anything it checks for sudo, an internet connection, 8 GB of free space and Python 3 (installed if missing), and stops with a clear message if the graphics can't be detected. When it finishes, Hyprland parses the installed config in strict mode and any problem is shown as an installer warning and written to the log (`~/.cache/desktop-install-*.log`).
+
+To run the installer test suite (root, network and package changes are stubbed): `python3 -m unittest discover -s tests`
+
 ### Desktop fixes
 
 - Login starts the wallpaper, Waybar, notifications and screen-sharing portals automatically. The overview and dropdown terminal open on demand.
