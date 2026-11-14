@@ -1,4 +1,4 @@
--- Select the sole display-connected GPU. Never pin a friend's card or PCI slot.
+-- Select the display-connected GPU (the boot GPU when screens are on several). Never pin a friend's card or PCI slot.
 local probe = io.popen('bash "' .. os.getenv("HOME") .. '/.config/hypr/scripts/GpuPrimary.sh"')
 if probe then
     local line = probe:read("*l") or ""

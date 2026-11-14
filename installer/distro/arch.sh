@@ -3,6 +3,7 @@
 
 DISTRO_LABEL="Arch Linux"
 PING_URL="https://archlinux.org"
+MKINITCPIO_CONF=${MKINITCPIO_CONF:-/etc/mkinitcpio.conf}     # overridable for testing
 
 d_check() {
     [[ "$ID" == arch || " ${ID_LIKE:-} " == *" arch "* ]]
@@ -70,10 +71,14 @@ d_drivers() {
                 run sudo pacman -S --needed --noconfirm nvidia-utils nvidia-settings libva-nvidia-driver egl-wayland \
                     || fail "Couldn't install NVIDIA userspace tools."
             fi
-            # keep nouveau out of the initramfs, enable KMS
-            if grep -qE '^HOOKS=.*\bkms\b' /etc/mkinitcpio.conf; then
-                sudo cp /etc/mkinitcpio.conf /etc/mkinitcpio.conf.bak
-                sudo sed -i -E '/^HOOKS=/ s/ kms//' /etc/mkinitcpio.conf
+            # keep nouveau off the NVIDIA card at boot, enable KMS
+            if [[ " $GPUS " == *" amd "* || " $GPUS " == *" intel "* ]] && grep -qE '^HOOKS=.*\bmodconf\b' "$MKINITCPIO_CONF"; then
+                # Hybrid: the kms hook gives the integrated GPU (wired to the built-in screen) early KMS, so keep it
+                # and block nouveau instead; the modconf hook puts this blacklist into the initramfs too.
+                printf 'blacklist nouveau\noptions nouveau modeset=0\n' | sudo tee /etc/modprobe.d/blacklist-nouveau.conf >/dev/null
+            elif grep -qE '^HOOKS=.*\bkms\b' "$MKINITCPIO_CONF"; then
+                sudo cp "$MKINITCPIO_CONF" "$MKINITCPIO_CONF.bak"
+                sudo sed -i -E '/^HOOKS=/ s/ kms//' "$MKINITCPIO_CONF"
             fi
             echo "options nvidia_drm modeset=1 fbdev=1" | sudo tee /etc/modprobe.d/nvidia-drm.conf >/dev/null
             run sudo mkinitcpio -P

@@ -75,6 +75,20 @@ class Detection(unittest.TestCase):
             with patch.object(gpu, "command", return_value=""):
                 self.assertEqual(gpu.facts(gpu.inventory(root), root)["DISPLAY_GPU"], "")
 
+    def test_screens_on_both_gpus_prefer_the_boot_gpu(self):
+        # AMD APU laptop with the built-in screen on the APU and an HDMI monitor on the NVIDIA card.
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            pci(root, "0000:01:00.0", "0x10de", "card0", True, driver="nvidia")
+            apu = pci(root, "0000:05:00.0", "0x1002", "card1", True, driver="amdgpu")
+            (apu / "boot_vga").write_text("1")
+            env = dict(os.environ, GPU_SYSFS_ROOT=tmp)
+            env.pop("AQ_DRM_DEVICES", None)
+            primary = subprocess.check_output(["bash", str(REPO / "config/hypr/scripts/GpuPrimary.sh")], text=True, env=env).strip()
+            self.assertEqual(primary, "/dev/dri/card1:/dev/dri/card0 0x1002")
+            with patch.object(gpu, "command", return_value=""):
+                self.assertEqual(gpu.facts(gpu.inventory(root), root)["DISPLAY_GPU"], "amd")
+
     def test_no_cards_headless_and_intel_id_not_assumed_chronological(self):
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
@@ -98,6 +112,57 @@ class Detection(unittest.TestCase):
             subprocess.run(["bash", str(REPO / "config/hypr/scripts/GpuConfig.sh")],
                            env=dict(os.environ, HOME=tmp), check=True, capture_output=True)
             self.assertEqual(config.read_bytes(), old)
+
+
+class ArchDrivers(unittest.TestCase):
+    """d_drivers from installer/distro/arch.sh, with sudo and pacman stubbed."""
+    HOOKS = "HOOKS=(base udev autodetect microcode modconf kms keyboard keymap consolefont block filesystems fsck)\n"
+
+    def drivers(self, gpus, hooks=HOOKS):
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp = Path(tmp)
+            stubs = tmp / "stubs"
+            stubs.mkdir()
+            for name, body in {
+                "sudo": 'printf "sudo %s\\n" "$*" >> "$LOG"\n[ -t 0 ] || cat >> "$LOG"\nexit 0\n',
+                "pacman": '[ "$1" = -Q ] && { [ "$2" = linux ]; exit; }\nexit 0\n',
+            }.items():
+                (stubs / name).write_text("#!/bin/sh\n" + body)
+                (stubs / name).chmod(0o755)
+            conf = tmp / "mkinitcpio.conf"
+            conf.write_text(hooks)
+            log = tmp / "log"
+            log.write_text("")
+            script = ('run() { echo "$ $*"; "$@"; }; fail() { echo "@@FAIL $*"; exit 1; }; '
+                      'warn() { echo "@@WARN $*"; }; note() { :; }; aur() { :; }; '
+                      'ID=arch; . "$REPO/installer/distro/arch.sh"; d_drivers')
+            env = dict(os.environ, PATH=f"{stubs}:{os.environ['PATH']}", LOG=str(log), REPO=str(REPO),
+                       MKINITCPIO_CONF=str(conf), GPUS=gpus, NVIDIA_DRIVER="", NVIDIA_ARCH="turing+", SECURE_BOOT="0")
+            result = subprocess.run(["bash", "-c", script], env=env, text=True, capture_output=True,
+                                    stdin=subprocess.DEVNULL, timeout=30)
+            self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+            self.assertNotIn("@@FAIL", result.stdout)
+            self.assertEqual(conf.read_text(), hooks)      # the stubbed sudo never edits it
+            return log.read_text()
+
+    def test_hybrid_keeps_early_kms_for_the_integrated_gpu(self):
+        for gpus in ("amd nvidia", "intel nvidia"):
+            with self.subTest(gpus=gpus):
+                log = self.drivers(gpus)
+                self.assertIn("tee /etc/modprobe.d/blacklist-nouveau.conf", log)
+                self.assertIn("blacklist nouveau", log)
+                self.assertNotIn("s/ kms//", log)
+                self.assertIn("mkinitcpio -P", log)
+
+    def test_nvidia_only_still_drops_the_kms_hook(self):
+        log = self.drivers("nvidia")
+        self.assertIn("s/ kms//", log)
+        self.assertNotIn("blacklist-nouveau.conf", log)
+
+    def test_hybrid_without_modconf_falls_back_to_dropping_kms(self):
+        log = self.drivers("amd nvidia", hooks="HOOKS=(base udev autodetect kms block filesystems fsck)\n")
+        self.assertIn("s/ kms//", log)
+        self.assertNotIn("blacklist-nouveau.conf", log)
 
 
 class DriverDecisions(unittest.TestCase):

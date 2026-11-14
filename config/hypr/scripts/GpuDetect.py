@@ -56,6 +56,10 @@ def facts(devices, root=Path("/sys")):
             vendors[0] if len(vendors) == 1 else "unknown")
     connected = [d for d in devices if d["connected"]]
     display = connected[0]["vendor"] if len(connected) == 1 else ""
+    if len(connected) > 1:
+        # Same rule as GpuPrimary.sh: with screens on several GPUs the boot GPU leads, if there is exactly one.
+        boot = [d for d in connected if d["boot"]]
+        display = boot[0]["vendor"] if len(boot) == 1 else ""
     if not connected:
         boot = [d for d in devices if d["boot"]]
         display = boot[0]["vendor"] if len(boot) == 1 else ""
