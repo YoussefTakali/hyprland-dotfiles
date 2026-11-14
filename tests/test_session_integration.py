@@ -35,7 +35,7 @@ class SessionIntegrationTests(unittest.TestCase):
                 stub = p / command
                 stub.write_text('''#!/bin/sh
 printf '%s %s\n' "${0##*/}" "$*" >> "$REPAIR_TEST_LOG"
-case "$*" in *reset-failed*) exit 1;; esac
+case "$*" in *reset-failed*) exit 1;; *LoadState*) echo "${TEST_LOAD_STATE:-}";; *NeedDaemonReload*) printf 'no\nno\n';; esac
 ''')
                 stub.chmod(0o755)
             env = dict(os.environ, PATH=tmp + ':' + os.environ['PATH'], XDG_RUNTIME_DIR=tmp,
@@ -44,8 +44,17 @@ case "$*" in *reset-failed*) exit 1;; esac
             subprocess.run(['bash', str(repo / 'config/hypr/scripts/SessionInit.sh'), '--restart'], env=env, check=True)
             lines = (p / 'commands').read_text().splitlines()
             assert lines[0].startswith('dbus-update-activation-environment')
-            assert lines[2].endswith('start hyprland-dotfiles-session.target')
+            start = next(i for i, line in enumerate(lines) if line.endswith('start hyprland-dotfiles-session.target'))
+            # A target systemd doesn't know yet is loaded before it is started.
+            assert any(line.endswith('--user daemon-reload') for line in lines[:start]), lines
             assert any('--user restart xdg-desktop-portal-hyprland.service' in line for line in lines)
+            # Once the units are loaded and unchanged, the slow reload is skipped.
+            (p / 'commands').unlink()
+            subprocess.run(['bash', str(repo / 'config/hypr/scripts/SessionInit.sh'), '--prepare-only'],
+                           env=dict(env, TEST_LOAD_STATE='loaded'), check=True)
+            lines = (p / 'commands').read_text().splitlines()
+            assert not any('daemon-reload' in line for line in lines), lines
+            assert lines[-1].endswith('start hyprland-dotfiles-session.target'), lines
             # Validate display GPU choice, including a desktop with an unused AMD iGPU.
             scripts = p / '.config/hypr/scripts'
             scripts.mkdir(parents=True)
@@ -121,7 +130,8 @@ query)
         exit 1
     fi
     test -f "$HOME/ready";;
-img) printf 'image %s\\n' "$*" >> "$HOME/commands";;
+img) printf 'image %s\\n' "$*" >> "$HOME/commands"
+    if test -f "$HOME/apps-released"; then echo released-before-image >> "$HOME/commands"; fi;;
 esac
 """)
             (scripts / 'swww-daemon').write_text("""#!/bin/sh
@@ -178,6 +188,10 @@ exit 1
             (home/'commands').unlink()
             subprocess.run(['bash', helper, '--still-only'], env=env, check=True, timeout=5)
             assert 'image img --transition-type none' in (home/'commands').read_text()
+            # Without a working native still, the other startup apps don't wait for swww's first frame.
+            (home/'commands').unlink()
+            subprocess.run(['bash', helper, '--still-only', '--ready-file', str(home/'apps-released')], env=env, check=True, timeout=5)
+            assert 'released-before-image' in (home/'commands').read_text()
 
 
 if __name__ == "__main__":

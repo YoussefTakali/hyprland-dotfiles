@@ -10,7 +10,11 @@ export XDG_CURRENT_DESKTOP=Hyprland XDG_SESSION_TYPE=wayland
 vars=(WAYLAND_DISPLAY XDG_CURRENT_DESKTOP XDG_SESSION_TYPE HYPRLAND_INSTANCE_SIGNATURE)
 [[ -z ${DISPLAY:-} ]] || vars+=(DISPLAY)
 dbus-update-activation-environment --systemd "${vars[@]}"
-systemctl --user daemon-reload
+# Reload unit files only when a session unit is new or changed: a reload costs ~150 ms at every login.
+if [[ $(systemctl --user show -P LoadState hyprland-dotfiles-session.target 2>/dev/null) != loaded ]] \
+    || systemctl --user show -P NeedDaemonReload hyprland-dotfiles-session.target swaync.service 2>/dev/null | grep -qx yes; then
+    systemctl --user daemon-reload
+fi
 # Fedora's graphical-session.target refuses direct starts. Pull it in with our target.
 systemctl --user start hyprland-dotfiles-session.target
 # The startup queue uses this before launching toolkit applications, so portal

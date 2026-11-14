@@ -47,6 +47,9 @@ if [[ -x $native && ${#selection[@]} == 5 && -s ${selection[4]} ]]; then
     fi
     rm -rf "$native_dir"
 fi
+# Only the native still is quick enough to hold the other startup apps for. Without it,
+# release them now so they start alongside swww instead of waiting for its first frame.
+[[ $painted == true ]] || signal_ready
 # swww 0.11 waits 500 ms before failing a query when its socket is absent.
 # Do not probe a daemon that hasn't started: that delayed the first launch, then
 # delayed the next readiness check again. A socket check is local and immediate.
