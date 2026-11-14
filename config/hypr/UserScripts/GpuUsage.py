@@ -54,7 +54,9 @@ def main():
     if not cards:
         emit(tooltip='No graphics device visible')
         return
-    _, _, card, dev, vendor = max(cards, key=lambda c: (c[0], c[1]))
+    # Prefer the discrete NVIDIA (richer stats, the one worth watching); fall back
+    # to the display-connected card only when there is no dGPU.
+    _, _, card, dev, vendor = max(cards, key=lambda c: (c[1], c[0]))
     pci = dev.resolve().name
     if vendor != '0x10de':
         name = pci_name(pci, {'0x1002': 'AMD GPU', '0x8086': 'Intel GPU'}[vendor])
