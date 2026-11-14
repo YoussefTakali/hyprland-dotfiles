@@ -6,8 +6,6 @@ __pycache__/
 backup-*/
 
 # Optional personal login and wallpaper media.
-home/login-themes/*.mp4
-home/login-themes/*.png
 config/quickshell/login-splash/jake.png
 config/quickshell/login-splash/transition.png
 wallpapers/Itachi-4K/

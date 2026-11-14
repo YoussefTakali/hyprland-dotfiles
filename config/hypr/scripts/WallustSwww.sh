@@ -60,3 +60,5 @@ python3 "$HOME/.config/hypr/scripts/StartupWallpaperCache.py" >/dev/null 2>&1 &
 # -s is used in this repo to keep things quiet and avoid extra prompts
 wallust run -s "$wallpaper_path" || true
 python3 -I "$HOME/.config/hypr/scripts/AccentGuard.py" || true   # readable accent + GTK/kitty accent
+# Login screen (SDDM): refresh a background that follows the desktop, and its colors.
+python3 "$HOME/.config/hypr/scripts/LoginThemes.py" --sync >/dev/null 2>&1 &

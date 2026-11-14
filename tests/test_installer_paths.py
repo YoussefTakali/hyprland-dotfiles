@@ -82,8 +82,8 @@ class InstallerPaths(unittest.TestCase):
             self.assertTrue((home/'.config/hypr/scripts/GpuDetect.py').is_file())
             self.assertTrue((home/'.config/hypr/scripts/StartupWallpaper.sh').is_file())
             self.assertTrue((home/'.config/quickshell/login-splash/jake.png').is_file())
-            self.assertTrue((home/'.local/share/hypr-login-themes/JakeLoadingScene.qml').is_file())
-            self.assertTrue((home/'.local/share/hypr-login-themes/shell.qml').is_file())
+            # The preset catalogue of the old login screen is no longer installed.
+            self.assertFalse((home/'.local/share/hypr-login-themes').exists())
             self.assertTrue((home/'.config/hypr/UserConfigs/GPU.conf').exists())
             if config_problem:
                 self.assertIn('@@WARN Hyprland reported problems in the installed config', result.stdout)

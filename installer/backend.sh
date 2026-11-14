@@ -182,10 +182,6 @@ if [[ -d "$HOME/.oh-my-zsh" ]]; then
     mkdir -p "$HOME/.oh-my-zsh/custom/themes" && cp "$HERE/oh-my-zsh/agnosterzak-mocha.zsh-theme" "$HOME/.oh-my-zsh/custom/themes/"
 fi
 mkdir -p "$HOME/.local/share/nautilus-python/extensions" "$HOME/.local/share/applications"
-mkdir -p "$HOME/.local/share/hypr-login-themes"
-cp -a "$HERE/home/login-themes/." "$HOME/.local/share/hypr-login-themes/" || fail "Could not install the animated login catalogue."
-cp "$HERE/config/quickshell/login-splash/"{JakeLoadingScene,shell}.qml "$HOME/.local/share/hypr-login-themes/" \
-    || fail "Could not install the shared login scene."
 cp "$HERE/home/nautilus-python/open-in-kitty.py" "$HOME/.local/share/nautilus-python/extensions/" || fail "Could not install Nautilus integration."
 sed "s|@HOME@|$HOME|g" "$HERE/home/applications/io.github.YoussefTakali.Shortcuts.desktop" \
     > "$HOME/.local/share/applications/io.github.YoussefTakali.Shortcuts.desktop"
@@ -357,16 +353,23 @@ step "Setting up the login screen"
 run sudo python3 "$HERE/installer/install-session.py" || fail "Could not install the portable Hyprland session."
 if [[ "$OPT_LOGIN" == sddm ]]; then
     d_sddm
-    run sudo bash "$HERE/installer/session/install-sddm.sh" "$HOME/.local/share/hypr-login-themes" || fail "Could not install the SDDM theme."
+    run sudo bash "$HERE/installer/session/install-sddm.sh" || fail "Could not install the SDDM theme."
     scene="$HOME/.config/quickshell/login-splash"
     artwork="$SDDM_THEME_DIR/Components/jake.png"
     [[ -f "$artwork" ]] || fail "The SDDM theme is missing its login artwork ($artwork); see the log."
+    # Jake is only the fallback: StartupWallpaperCache.py puts the current wallpaper
+    # behind the loading scene, and keeps it in step with every wallpaper change.
     cp "$artwork" "$scene/jake.png" || fail "Could not install the desktop login artwork."
+    rm -f "$scene/.jake-source.json"
     if [[ -f "$scene/transition.png" ]]; then
         mkdir -p "$BACKUP" || fail "Could not create the configuration backup."
         mv "$scene/transition.png" "$BACKUP/previous-transition.png" || fail "Could not back up the previous transition frame."
     fi
     python3 "$HOME/.config/hypr/scripts/StartupWallpaperCache.py"
+    # Build the login screen from the saved choices (Super+Ctrl+Alt+L changes them).
+    if [[ -w "${SDDM_STYLES_DIR:-/usr/share/sddm/themes/hypr-login-styles}/Desktop" ]]; then
+        python3 "$HOME/.config/hypr/scripts/LoginThemes.py" --sync || warn "The login screen keeps its defaults until the next wallpaper change."
+    fi
     run sudo systemctl enable -f sddm || fail "Couldn't enable SDDM."
     for dm in "${DM_OTHERS[@]}"; do
         if systemctl is-enabled "$dm" >/dev/null 2>&1; then

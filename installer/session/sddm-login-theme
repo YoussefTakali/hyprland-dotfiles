@@ -1,0 +1,133 @@
+#!/usr/bin/python3 -I
+"""Root helper for the login screen (installed to /usr/local/libexec).
+
+  sddm-login-theme --install DIR   install the hypr-login-styles theme from DIR and
+                                   make it the login screen. Run once (and again
+                                   after editing the theme's QML); everything else
+                                   -- layout, background, colors -- is chosen
+                                   without a password through Desktop/login.conf.
+
+It also turns off the on-screen keyboard and removes the generated presets of
+earlier versions (live-*, desktop-*) from sddm-astronaut-theme.
+"""
+import os
+from pathlib import Path
+import pwd
+import re
+import shutil
+import subprocess
+import sys
+import tempfile
+
+THEMES = Path('/usr/share/sddm/themes')
+ASTRONAUT = THEMES / 'sddm-astronaut-theme'
+STYLES = THEMES / 'hypr-login-styles'
+SDDM_CONF = Path('/etc/sddm.conf')
+QML = re.compile(r'[A-Za-z][A-Za-z0-9_-]{0,60}\.qml')
+GENERATED = re.compile(r'(live|desktop)-[a-z0-9-]{1,60}\.(conf|mp4|png)')
+
+
+def write(path, data):
+    with tempfile.NamedTemporaryFile(dir=path.parent, delete=False) as stream:
+        stream.write(data)
+        temporary = Path(stream.name)
+    temporary.chmod(0o644)
+    os.replace(temporary, path)
+    if shutil.which('restorecon'):
+        subprocess.run(['restorecon', str(path)], check=False)
+
+
+def set_keys(path, section, values):
+    """Set KEY=VALUE lines inside [section] of an INI file, keeping everything else."""
+    lines = path.read_text().splitlines() if path.is_file() else []
+    out, current, pending = [], None, dict(values)
+
+    def flush():
+        for key, value in pending.items():
+            out.append(f'{key}={value}')
+        pending.clear()
+
+    for line in lines:
+        stripped = line.strip()
+        if stripped.startswith('['):
+            if current == section:
+                flush()
+            current = stripped.strip('[]')
+        elif current == section and '=' in stripped:
+            key = stripped.split('=', 1)[0].strip()
+            if key in values:
+                if key in pending:
+                    out.append(f'{key}={pending.pop(key)}')
+                continue   # drop duplicates of a key we set
+        out.append(line)
+    if pending:
+        if current != section:
+            out.append(f'[{section}]')
+        flush()
+    write(path, ('\n'.join(out) + '\n').encode())
+
+
+def owned_by_caller(path):
+    uid = int(os.environ.get('SUDO_UID') or os.environ.get('PKEXEC_UID') or 0)
+    if not uid:
+        sys.exit('Run through sudo so the settings folder can belong to you.')
+    if path.is_symlink():
+        sys.exit(f'{path} must be a real folder.')
+    path.mkdir(mode=0o755, exist_ok=True)
+    os.chown(path, uid, pwd.getpwuid(uid).pw_gid)
+    path.chmod(0o755)
+    if shutil.which('restorecon'):
+        subprocess.run(['restorecon', '-R', str(path)], check=False)
+
+
+def install(source):
+    if not (source / 'Main.qml').is_file() or not (source / 'metadata.desktop').is_file():
+        sys.exit(f'{source} does not contain the theme.')
+    count = 0
+    for folder in ('.', 'components', 'styles'):
+        (STYLES / folder).mkdir(mode=0o755, parents=True, exist_ok=True)
+        for item in sorted((source / folder).iterdir()):
+            if item.is_symlink() or not item.is_file() or not QML.fullmatch(item.name):
+                continue
+            write(STYLES / folder / item.name, item.read_bytes())
+            count += 1
+    metadata = re.sub(r'^ConfigFile=.*$', 'ConfigFile=Desktop/login.conf',
+                      (source / 'metadata.desktop').read_text(), flags=re.M)
+    write(STYLES / 'metadata.desktop', metadata.encode())
+    owned_by_caller(STYLES / 'Desktop')
+    print(f'Installed {count + 1} file(s) into {STYLES}')
+
+    backup = SDDM_CONF.with_name('sddm.conf.before-login-themes')
+    if SDDM_CONF.is_file() and not backup.exists():
+        shutil.copy2(SDDM_CONF, backup)
+    set_keys(SDDM_CONF, 'Theme', {'Current': STYLES.name})
+    # An empty InputMethod overrides conf.d/virtualkbd.conf: no on-screen keyboard.
+    set_keys(SDDM_CONF, 'General', {'InputMethod': ''})
+    print(f'{SDDM_CONF}: Current={STYLES.name}, on-screen keyboard off')
+
+    removed = 0
+    for folder in ('Themes', 'Backgrounds'):
+        for item in (ASTRONAUT / folder).iterdir():
+            if GENERATED.fullmatch(item.name) and (item.is_symlink() or item.is_file()):
+                item.unlink()
+                removed += 1
+    if (ASTRONAUT / 'Desktop').is_dir() and not (ASTRONAUT / 'Desktop').is_symlink():
+        shutil.rmtree(ASTRONAUT / 'Desktop')
+        removed += 1
+    metadata = (ASTRONAUT / 'metadata.desktop').read_text()
+    write(ASTRONAUT / 'metadata.desktop',
+          re.sub(r'^ConfigFile=.*$', 'ConfigFile=Themes/japanese_aesthetic.conf', metadata, flags=re.M).encode())
+    print(f'Removed {removed} old generated preset item(s) from {ASTRONAUT}')
+
+
+def main():
+    if os.geteuid() != 0:
+        sys.exit('Run as root (sudo).')
+    if len(sys.argv) == 3 and sys.argv[1] == '--install':
+        install(Path(sys.argv[2]).resolve())
+    else:
+        sys.exit(__doc__)
+
+
+if __name__ == '__main__':
+    main()

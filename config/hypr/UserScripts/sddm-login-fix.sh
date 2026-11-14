@@ -34,7 +34,7 @@ if ! localectl status | grep -q "X11 Layout"; then
     [[ -n "$vc" && "$vc" != "n/a" ]] && localectl set-x11-keymap "$vc" || true
 fi
 
-# 4. SDDM: X11 greeter with the Bibata cursor (keeps your theme — Jake / sddm-astronaut)
+# 4. SDDM: X11 greeter with the Bibata cursor (keeps your theme — Hypr Login Styles)
 [[ -f /etc/sddm.conf.d/20-login-fix.conf ]] && cp -a /etc/sddm.conf.d/20-login-fix.conf /etc/sddm.conf.d/20-login-fix.conf.weston.bak
 cat > /etc/sddm.conf.d/20-login-fix.conf <<EOF
 # Written by sddm-login-fix.sh v2 — X11 login screen: visible cursor + system keyboard layout

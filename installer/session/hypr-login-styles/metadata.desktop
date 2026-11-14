@@ -1,0 +1,12 @@
+[SddmGreeterTheme]
+Name=Hypr Login Styles
+Description=Login layouts drawn from the desktop, with a background per layout
+Author=YoussefTakali
+License=GPL-3.0-or-later
+Type=sddm-theme
+Version=1.0
+ConfigFile=Desktop/login.conf
+MainScript=Main.qml
+Theme-Id=hypr-login-styles
+Theme-API=2.0
+QtVersion=6

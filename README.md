@@ -41,6 +41,7 @@ Full-quality recording: <a href="assets/demo.mp4">demo.mp4</a></i></p>
 ## Features
 
 - **Lock screen** — 4 switchable styles (Slate, Iris, Fog, Cards). Frosted wallpaper, music controls with album art and cava visualizer, weather, battery, ambient mode. Secure Wayland session lock with hyprlock fallback.
+- **Login screen** (Super+Ctrl+Alt+L) — SDDM layouts drawn from the desktop: Tiles (Hyprland windows), Terminal (kitty + fastfetch), Rofi, Bar (waybar + notification), Editorial and Japanese Aesthetic. Each layout keeps its own background — the desktop wallpaper (following every change, live videos included) or any image or video — and its own position (left, center or right). Colors come from the background or the desktop's wallust palette, and any combination can be saved as a named preset. No password is needed after installation, and the on-screen keyboard stays off.
 - **Power menu** — animated orbs with a 3-second countdown ring. Lock, sleep, logout, restart, shutdown.
 - **Volume & brightness OSD** — glass pill overlay with accent-colored progress bar, follows your wallpaper theme.
 - **Waybar** — adaptive colors from wallpaper. Wi-Fi with speed, Bluetooth with battery, GPU/CPU, privacy indicators, cava visualizer. On the Ultimate bar, left-click Bluetooth for the quick menu and right-click for Blueman.
@@ -93,7 +94,7 @@ A GTK4 installer walks you through package installation, driver setup, and confi
 ```sh
 ./install.sh                 # everything: Hyprland, drivers, apps, configs
 ./install.sh --no-base       # Hyprland already installed: configs + apps only
-./install.sh --sddm          # also the themed SDDM login screen
+./install.sh --sddm          # also the themed SDDM login screen (Hypr Login Styles)
 ./install.sh --jack-fix      # 3.5mm jack silent? keep it on despite broken jack detection
 ./install.sh --help          # all options (bar style, lock style, keyboard, no drivers)
 ```
@@ -114,7 +115,7 @@ configuration setup. `--base` explicitly reinstalls the base. Existing GPU stack
 are preserved. Firmware MOK approval requires the user's physical action at reboot;
 it is never bypassed and Secure Boot is never disabled.
 
-The installer registers and selects **Hyprland (Desktop dotfiles)** for GDM or SDDM alongside the packaged session. Choose the SDDM option to install the shared login scene and theme presets. The installer backs up existing settings before replacing them.
+The installer registers and selects **Hyprland (Desktop dotfiles)** for GDM or SDDM alongside the packaged session. Choose the SDDM option to install the Hypr Login Styles theme and the shared login scene; Super+Ctrl+Alt+L then picks the layout, background, position, colors and presets. After editing the theme's QML in `installer/session/hypr-login-styles`, reinstall it with `sudo /usr/local/libexec/sddm-login-theme --install installer/session/hypr-login-styles`. The installer backs up existing settings before replacing them.
 
 Before changing anything it checks for sudo, an internet connection, 8 GB of free space and Python 3 (installed if missing), and stops with a clear message if the graphics can't be detected. When it finishes, Hyprland parses the installed config in strict mode and any problem is shown as an installer warning and written to the log (`~/.cache/desktop-install-*.log`).
 
@@ -144,6 +145,7 @@ Once installation finishes, log into the dotfiles session. Desktop features are 
 | Super+Alt+T | text grab (OCR) |
 | Super+Ctrl+Alt+T | appearance manager |
 | Super+Ctrl+T | desktop theme |
+| Super+Ctrl+Alt+L | login screen: layout, background, position, presets |
 | Super+Ctrl+B | Waybar style |
 | Super+Alt+B | Waybar layout |
 | Super+Shift+A | animations |

@@ -134,6 +134,41 @@ def prepare(wall, monitors, cache, drm=Path("/sys/class/drm")):
             marker.unlink(missing_ok=True)
 
 
+def sync_splash(wall, scene_dir=None, limit=(2560, 1440)):
+    """Keep the login loading scene on the wallpaper selected now.
+
+    The scene used to keep whatever image was copied into it once, so every
+    login flashed an old wallpaper before the current one appeared.
+    """
+    from PIL import Image
+    scene_dir = scene_dir or Path.home() / ".config/quickshell/login-splash"
+    if not (scene_dir / "shell.qml").is_file():
+        return
+    target, stamp = scene_dir / "jake.png", scene_dir / ".jake-source.json"
+    source = signature(wall)
+    try:
+        if target.is_file() and json.loads(stamp.read_text()) == source:
+            return
+    except (OSError, ValueError):
+        pass
+    with Image.open(wall) as original:
+        image = original.convert("RGB")
+    image.thumbnail(limit, Image.Resampling.LANCZOS)
+    if signature(wall) != source:
+        return  # the wallpaper changed again while decoding; that run syncs it
+    with tempfile.NamedTemporaryFile(dir=scene_dir, prefix=".jake-", suffix=".png", delete=False) as stream:
+        temporary = Path(stream.name)
+    try:
+        image.save(temporary, format="PNG", compress_level=1)
+        temporary.chmod(0o644)
+        os.replace(temporary, target)
+    finally:
+        temporary.unlink(missing_ok=True)
+    stamp.write_text(json.dumps(source) + "\n")
+    # A pre-rendered frame of the scene would still contain the old picture.
+    (scene_dir / "transition.png").unlink(missing_ok=True)
+
+
 def native_selection(wall, monitors, cache):
     if select(wall, monitors, cache) == wall:
         return []
@@ -166,6 +201,10 @@ if __name__ == "__main__":
     elif sys.argv[1:] == ["--select"]:
         print(select(wall, monitors, cache))
     else:
+        try:
+            sync_splash(wall)
+        except (ImportError, OSError, ValueError) as exc:
+            print("Login splash sync skipped:", exc, file=sys.stderr)
         try:
             prepare(wall, monitors, cache)
         except (ImportError, OSError, ValueError, KeyError, subprocess.SubprocessError) as exc:

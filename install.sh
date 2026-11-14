@@ -8,7 +8,7 @@
 #   ./install.sh --no-base       skip the Hyprland base packages (Hyprland already set up; configs + apps)
 #   ./install.sh --base          explicitly install the Hyprland base packages
 #   ./install.sh --no-drivers    don't touch graphics drivers
-#   ./install.sh --sddm          also switch the login screen to SDDM with the Jake (sddm-astronaut) theme
+#   ./install.sh --sddm          also switch the login screen to SDDM with the Hypr Login Styles theme
 #   ./install.sh --bar=ultimate|adaptive|glass|liquid|liquid-v2|liquid-v3   bar style (default: ultimate)
 #   ./install.sh --lock=Slate|Iris|Fog|Cards       lock screen style (default: Slate)
 #   ./install.sh --kb=<layout>   keyboard layout (default: this PC's)
